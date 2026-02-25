@@ -1,0 +1,6 @@
+[flake8]
+# Ignoriere Zeilenlänge-Warnungen
+ignore = E501
+
+# Oder alternativ: Maximale Zeilenlänge auf z.B. 120 Zeichen setzen
+# max-line-length = 120
