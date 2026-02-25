@@ -52,27 +52,6 @@ Die URLs für die BaSyx-Services können über Umgebungsvariablen konfiguriert w
 | `AAS_DISCOVERY_PATH` | `http://localhost:8084/lookup/shells` | Pfad zum AAS Discovery Service |
 | `DASHBOARD_SERVICE_PATH` | `http://localhost:8085/api/elements` | Pfad zum Dashboard Service |
 
-### Umgebungsvariablen setzen
-
-**PowerShell:**
-```powershell
-$env:AAS_ENV_BASE_URL = "http://example.com:8081"
-$env:AAS_ENV_REPO_PATH = "http://example.com:8081/shells"
-```
-
-**CMD:**
-```cmd
-set AAS_ENV_BASE_URL=http://example.com:8081
-set AAS_ENV_REPO_PATH=http://example.com:8081/shells
-```
-
-**Oder verwenden Sie eine .env-Datei** (erfordert `python-dotenv`):
-```env
-AAS_ENV_BASE_URL=http://example.com:8081
-AAS_ENV_REPO_PATH=http://example.com:8081/shells
-SUBMODEL_ENV_REPO_PATH=http://example.com:8081/submodels
-```
-
 ## Verwendung
 
 Führen Sie das Hauptskript aus:
@@ -129,17 +108,6 @@ async def example():
     )
 
 asyncio.run(example())
-```
-
-## Projektstruktur
-
-```
-aas-client-async/
-├── main.py                    # Hauptskript mit AAS-Erstellungsfunktionen
-├── basyx_helper_async.py      # Hilfsfunktionen für BaSyx-Interaktion
-├── requirements.txt           # Python-Abhängigkeiten
-├── README.md                  # Diese Datei
-└── env/                       # Virtuelle Umgebung (nicht versioniert)
 ```
 
 ## Abhängigkeiten
