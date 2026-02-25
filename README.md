@@ -1,4 +1,4 @@
-# AAS Client Async
+# AAS Client
 
 Asynchroner Client zum Erstellen und Registrieren von Asset Administration Shells (AAS) in BaSyx-Repositories.
 
