@@ -102,6 +102,28 @@ set UA_PUBLISHING_INTERVAL=500
 python main.py
 ```
 
+## OPC-UA Event-Subscription Ablauf
+
+Der Client geht in `main.py` aktuell in folgenden Schritten vor, um die relevanten Events zu finden und zu verarbeiten:
+
+1. Verbindung zum OPC-UA-Server über `UA_ENDPOINT_URL` und `UA_REQUEST_TIMEOUT`.
+2. Auflösen der Namespace-Indizes für
+	- `http://opcfoundation.org/UA/Machinery/`
+	- `http://opcfoundation.org/UA/Machinery/Jobs/`
+3. Einstieg über die konfigurierte Maschineninstanz `UA_MACHINE_INSTANCE_NODEID`.
+4. Navigation im Adressraum:
+	- `Machine -> MachineryBuildingBlocks -> JobManager -> JobOrderResults`
+5. Lesen der `GeneratesEvent`-References von `JobOrderResults`.
+6. Übernahme der ersten gefundenen Reference als erwarteter EventType (`EVENT_TYPE_NODEID`).
+7. Erstellen einer Subscription mit `UA_PUBLISHING_INTERVAL`.
+8. Aktuell: `subscribe_events()` ohne serverseitigen EventType-Filter (siehe `FIXME` im Code).
+9. Laufende Event-Verarbeitung über Queue:
+	- Der `SubscriptionHandler` legt eingehende Events in `EVENT_QUEUE`.
+	- `process_event(...)` verarbeitet nur Events, deren `EventType` dem zuvor ermittelten `EVENT_TYPE_NODEID` entspricht.
+	- Andere Eventtypen werden geloggt und ignoriert.
+
+Damit wird die fachliche Filterung derzeit clientseitig umgesetzt. Ein serverseitiger Filter auf den exakten EventType ist als nächster Ausbauschritt vorgesehen.
+
 ## Hinweise zum aktuellen Stand
 
 - In `main.py` ist das Mapping von empfangenen OPC-UA-Events auf das erwartete `job_data`-Schema noch als `TODO` markiert.
