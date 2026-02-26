@@ -1,5 +1,5 @@
 from basyx.aas import model
-from basyx.register import register_in_basyx
+from basyx_utils.register import register_in_basyx
 
 
 async def create_aas_for_job(job_data: dict) -> None:

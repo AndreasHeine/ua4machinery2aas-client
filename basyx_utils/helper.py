@@ -1,6 +1,6 @@
 import httpx
 from basyx.aas import model
-from basyx.client import AsyncBaSyxClient
+from basyx_utils.client import AsyncBaSyxClient
 
 
 async def post_aas_async(aas_repo_url: str, aas: model.AssetAdministrationShell) -> httpx.Response:

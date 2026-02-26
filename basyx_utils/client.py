@@ -5,7 +5,7 @@ Async BaSyx Client using httpx for async HTTP requests.
 from basyx.aas import model
 import basyx.aas.adapter.json
 import httpx
-import json
+import json 
 from typing import Optional
 from common.helper import utf8_base64_url_encode
 

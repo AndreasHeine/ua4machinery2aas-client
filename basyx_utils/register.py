@@ -1,5 +1,5 @@
 from basyx.aas import model
-from basyx.helper import add_aas_to_basyx_async, add_submodel_to_basyx_async
+from basyx_utils.helper import add_aas_to_basyx_async, add_submodel_to_basyx_async
 from config import AAS_ENV_REPO_PATH, SUBMODEL_ENV_REPO_PATH
 
 

@@ -1,120 +1,115 @@
 # AAS Client
 
-Asynchroner Client zum Erstellen und Registrieren von Asset Administration Shells (AAS) in BaSyx-Repositories.
+Python-Client zur Anbindung eines OPC-UA-Servers und Registrierung von AAS/Submodels in einer BaSyx-Umgebung.
 
-## Beschreibung
+Der Client verbindet sich mit einer Maschine, abonniert Events und erzeugt darauf basierend AAS-Datenstrukturen.
 
-Dieses Projekt bietet Python-Funktionen zum asynchronen Erstellen von AAS für:
-- Job Orders mit zugehörigen Submodels (JobOrder, JobState, JobResponse)
-- Maschinenidentifikation mit MachineryIdentification Submodel
+## Features
 
-Die erstellten AAS werden automatisch in einem BaSyx-Repository registriert.
+- Verbindung zu OPC UA via `asyncua`
+- Subscription auf Events
+- Erstellung/Update von AAS und Submodels via BaSyx REST APIs
+- Vollständig über Umgebungsvariablen konfigurierbar
 
 ## Voraussetzungen
 
-- Python 3.7+
-- BaSyx-Server (läuft auf den konfigurierten Ports)
+- Python 3.11+ (empfohlen)
+- Docker + Docker Compose (für lokales BaSyx-Backend)
 
-## Installation
+## Projektstruktur
 
-1. Erstellen Sie eine virtuelle Umgebung:
+- `main.py` – OPC-UA-Subscription und Event-Verarbeitung
+- `old_main.py` – lokaler Demo/Smoke-Test für AAS-Erstellung ohne OPC UA
+- `config.py` – zentrale Konfiguration über ENV-Variablen
+- `ua_job_aas.py` – Erstellung von Job-AAS/Submodels
+- `ua_machine_aas.py` – Erstellung von Maschinen-Identifikations-AAS
+- `basyx_utils/` – async REST-Client und Register-Helfer für BaSyx
+- `backend/` – Docker-Compose für BaSyx, Registry, Discovery, UI, Dashboard API
+
+## Quickstart
+
+### 1) Python-Abhängigkeiten installieren
+
 ```bash
 python -m venv env
-```
-
-2. Aktivieren Sie die virtuelle Umgebung:
-```bash
-# Windows CMD
-env\Scripts\activate.bat
-
-# Windows PowerShell
-env\Scripts\Activate.ps1
-
-# Linux/Mac
-source env/bin/activate
-```
-
-3. Installieren Sie die Abhängigkeiten:
-```bash
+env\\Scripts\\activate
 pip install -r requirements.txt
 ```
 
-## Konfiguration
+### 2) BaSyx-Backend starten (lokal)
 
-Die URLs für die BaSyx-Services können über Umgebungsvariablen konfiguriert werden. Ohne Konfiguration werden die folgenden Standardwerte verwendet:
+```bash
+cd backend
+docker-compose up -d
+```
 
-| Umgebungsvariable | Standardwert | Beschreibung |
-|------------------|--------------|--------------|
-| `AAS_ENV_BASE_URL` | `http://localhost:8081` | Basis-URL für AAS Environment |
-| `AAS_ENV_REPO_PATH` | `http://localhost:8081/shells` | Repository-Pfad für AAS |
-| `SUBMODEL_ENV_REPO_PATH` | `http://localhost:8081/submodels` | Repository-Pfad für Submodels |
-| `CD_ENV_REPO_PATH` | `http://localhost:8081/concept-descriptions` | Repository-Pfad für Concept Descriptions |
-| `AAS_DISCOVERY_PATH` | `http://localhost:8084/lookup/shells` | Pfad zum AAS Discovery Service |
-| `DASHBOARD_SERVICE_PATH` | `http://localhost:8085/api/elements` | Pfad zum Dashboard Service |
+Danach sind standardmäßig erreichbar:
 
-## Verwendung
+- AAS Environment: http://localhost:8081
+- AAS Registry: http://localhost:8082
+- Submodel Registry: http://localhost:8083
+- AAS Discovery: http://localhost:8084
+- Dashboard API: http://localhost:8085
+- AAS Web UI: http://localhost:3000
 
-Führen Sie das Hauptskript aus:
+### 3) Client starten
 
 ```bash
 python main.py
 ```
 
-### Beispiel: AAS für Job Order erstellen
+## Konfiguration (ENV)
 
-```python
-import asyncio
-from main import create_aas_for_job
-from datetime import datetime
+Alle Parameter in `config.py` können per Umgebungsvariable überschrieben werden.
 
-async def example():
-    await create_aas_for_job({
-        "JobOrder": {
-            "JobOrderID": "JOB_001",
-            "Description": "Produce 100 units of product XYZ",
-            "WorkmasterId": "WM_001",
-            "StartTime": datetime.now().isoformat(),
-            "EndTime": datetime.now().isoformat(),
-            "Priority": 500,
-            "JobOrderParameters": {
-                "JobName": ["XYZ", "xyz"],
-                "OrderNumbers": [100, 101]
-            }
-        },
-        "JobState": "Ended",
-        "JobStateNumber": 5
-    })
+### AAS/BaSyx
 
-asyncio.run(example())
+| Variable | Default |
+|---|---|
+| `AAS_ENV_BASE_URL` | `http://localhost:8081` |
+| `AAS_ENV_REPO_PATH` | `http://localhost:8081/shells` |
+| `SUBMODEL_ENV_REPO_PATH` | `http://localhost:8081/submodels` |
+| `CD_ENV_REPO_PATH` | `http://localhost:8081/concept-descriptions` |
+| `AAS_DISCOVERY_PATH` | `http://localhost:8084/lookup/shells` |
+| `DASHBOARD_SERVICE_PATH` | `http://localhost:8085/api/elements` |
+
+### OPC UA
+
+| Variable | Default | Hinweis |
+|---|---|---|
+| `UA_ENDPOINT_URL` | `opc.tcp://opcua.umati.app:4843` | OPC-UA-Server-Endpoint |
+| `UA_REQUEST_TIMEOUT` | `4` | Sekunden (int) |
+| `UA_MACHINE_INSTANCE_NODEID` | `ns=49;s=MyControledMachine` | NodeId der Maschineninstanz |
+| `UA_PUBLISHING_INTERVAL` | `1000` | Millisekunden (int) |
+
+### Beispiele zum Setzen von Variablen
+
+**PowerShell:**
+
+```powershell
+$env:UA_ENDPOINT_URL = "opc.tcp://my-server:4840"
+$env:UA_MACHINE_INSTANCE_NODEID = "ns=2;s=MyMachine"
+$env:UA_PUBLISHING_INTERVAL = "500"
+python main.py
 ```
 
-### Beispiel: AAS für Maschinenidentifikation erstellen
+**Windows CMD:**
 
-```python
-import asyncio
-from main import create_aas_for_identification
-from basyx_helper_async import clean_id
-
-async def example():
-    await create_aas_for_identification(
-        clean_id("Machine_001"),
-        {
-            "ProductInstanceUri": "urn:uuid:123e4567-e89b-12d3-a456-426614174000",
-            "Manufacturer": "konzeptpark GmbH",
-            "Model": "FactoryNexus",
-            "SerialNumber": "SN123456789",
-            "Location": "Factory Floor A"
-        }
-    )
-
-asyncio.run(example())
+```cmd
+set UA_ENDPOINT_URL=opc.tcp://my-server:4840
+set UA_MACHINE_INSTANCE_NODEID=ns=2;s=MyMachine
+set UA_PUBLISHING_INTERVAL=500
+python main.py
 ```
 
-## Abhängigkeiten
+## Hinweise zum aktuellen Stand
 
-Die wichtigsten Abhängigkeiten sind:
-- `basyx-python-sdk` - BaSyx Python SDK für AAS-Modelle
-- `httpx` - Asynchroner HTTP-Client
-- `anyio` - Asynchrone I/O-Bibliothek
+- In `main.py` ist das Mapping von empfangenen OPC-UA-Events auf das erwartete `job_data`-Schema noch als `TODO` markiert.
+- Für einen schnellen Funktionstest der BaSyx-Registrierung ohne OPC-UA-Events kann `old_main.py` genutzt werden.
+- Bei bestehenden IDs wird in BaSyx per PUT überschrieben (Upsert-Verhalten).
 
-Siehe `requirements.txt` für eine vollständige Liste.
+## Troubleshooting
+
+- **HTTP 4xx/5xx bei AAS/Submodel-Registrierung:** Prüfen, ob `backend/docker-compose.yml` läuft und die `*_REPO_PATH`-URLs korrekt sind.
+- **Keine OPC-UA-Events:** `UA_MACHINE_INSTANCE_NODEID` und Namespace/Model des Zielservers prüfen.
+- **Timeouts:** `UA_REQUEST_TIMEOUT` erhöhen und Server-Erreichbarkeit testen.
