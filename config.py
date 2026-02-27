@@ -17,5 +17,5 @@ OPC UA Configuration parameters. These can be set via environment variables or w
 
 UA_ENDPOINT_URL: str = os.getenv("UA_ENDPOINT_URL", "opc.tcp://opcua.umati.app:4843")
 UA_REQUEST_TIMEOUT: int = int(os.getenv("UA_REQUEST_TIMEOUT", "4"))  # in seconds
-UA_MACHINE_INSTANCE_NODEID: str = os.getenv("UA_MACHINE_INSTANCE_NODEID", "ns=49;s=MyControledMachine")  # FIXME: ExpandedNodeId-String
+UA_MACHINE_INSTANCE_NODEID: str = os.getenv("UA_MACHINE_INSTANCE_NODEID", "nsu=http://MyControledMachine-Namespace/UA;s=MyControledMachine")
 UA_PUBLISHING_INTERVAL: int = int(os.getenv("UA_PUBLISHING_INTERVAL", "1000"))  # in milliseconds
