@@ -3,6 +3,31 @@ from basyx.aas import model
 from basyx_utils.client import AsyncBaSyxClient
 
 
+AAS_HTTP_STATUS_CODES = {
+    200: "OK",
+    201: "Asset Administration Shell Descriptor created successfully",
+    204: "Asset Administration Shell Descriptor updated successfully",
+    400: "Bad Request, e.g. the request parameters of the format of the request body is wrong",
+    401: "Unauthorized",
+    403: "Forbidden",
+    404: "Not Found",
+    409: "Conflict, a resource which shall be created exists already. Might be thrown if a Submodel or SubmodelElement with the same ShortId is contained in a POST request",
+    500: "Internal Server Error"
+}
+
+SM_HTTP_STATUS_CODES = {
+    200: "OK",
+    201: "Submodel created successfully",
+    204: "Submodel updated successfully",
+    400: "Bad Request, e.g. the request parameters of the format of the request body is wrong",
+    401: "Unauthorized",
+    403: "Forbidden",
+    404: "Not Found",
+    409: "Conflict, a resource which shall be created exists already. Might be thrown if a Submodel or SubmodelElement with the same ShortId is contained in a POST request",
+    500: "Internal Server Error"
+}
+
+
 async def post_aas_async(aas_repo_url: str, aas: model.AssetAdministrationShell) -> httpx.Response:
     """
     Async version of post_aas. Posts an Asset Administration Shell to the BaSyx endpoint.
