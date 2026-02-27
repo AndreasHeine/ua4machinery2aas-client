@@ -1,34 +1,50 @@
-# AAS Client
+# OPC for Machinery to AAS Client
 
-Python-Client zur Anbindung eines OPC-UA-Servers und Registrierung von AAS/Submodels in einer BaSyx-Umgebung.
+Python client for connecting to an OPC UA server and registering AAS/Submodels in a BaSyx Backend.
 
-Der Client verbindet sich mit einer Maschine, abonniert Events und erzeugt darauf basierend AAS-Datenstrukturen.
+The client connects to a machine, subscribes to events, and creates AAS data structures based on those events.
+
+## OPC UA Event Subscription Flow
+
+In `main.py`, the client currently performs the following steps to find and process relevant events:
+
+1. Connect to the OPC UA server using `UA_ENDPOINT_URL` and `UA_REQUEST_TIMEOUT`.
+2. Load type definitions (`load_data_type_definitions`, `load_type_definitions`) and read the namespace array (`get_namespace_array`).
+3. Resolve namespace indices from the namespace array for
+	- `http://opcfoundation.org/UA/Machinery/`
+	- `http://opcfoundation.org/UA/Machinery/Jobs/`
+4. Enter via the configured machine instance `UA_MACHINE_INSTANCE_NODEID` (normalized using the helper `make_nodeid_string(...)`).
+5. Navigate the address space:
+	- `Machine -> MachineryBuildingBlocks -> JobManager -> JobOrderResults`
+6. Read `GeneratesEvent` references from `JobOrderResults`.
+7. Use the first reference as expected event type (`EVENT_TYPE_NODEID`) and resolve the event type node.
+8. Create a subscription with `UA_PUBLISHING_INTERVAL`.
+9. Subscribe with a server-side filter via `subscribe_events(...)`:
+	- `sourcenode=job_order_results_node`
+	- `evtypes=[found_eventtype_node]`
+	- `where_clause_generation=True`
+10. Process events continuously via queue:
+	- `SubscriptionHandler` puts incoming events into `EVENT_QUEUE`.
+	- `process_event(...)` only processes events whose `EventType` matches the previously determined `EVENT_TYPE_NODEID`.
+	- A `job_data` payload for `create_aas_for_job(...)` is built from the event.
+
+Event filtering is already done server-side in the subscription; client-side `EventType` checking remains as an additional safeguard.
 
 ## Features
 
-- Verbindung zu OPC UA via `asyncua`
-- Subscription auf Events
-- Erstellung/Update von AAS und Submodels via BaSyx REST APIs
-- Vollständig über Umgebungsvariablen konfigurierbar
+- OPC UA connectivity via `asyncua`
+- Event subscription
+- AAS and submodel creation/update via BaSyx REST APIs
+- Fully configurable via environment variables
 
-## Voraussetzungen
+## Requirements
 
-- Python 3.11+ (empfohlen)
-- Docker + Docker Compose (für lokales BaSyx-Backend)
-
-## Projektstruktur
-
-- `main.py` – OPC-UA-Subscription und Event-Verarbeitung
-- `old_main.py` – lokaler Demo/Smoke-Test für AAS-Erstellung ohne OPC UA
-- `config.py` – zentrale Konfiguration über ENV-Variablen
-- `ua_job_aas.py` – Erstellung von Job-AAS/Submodels
-- `ua_machine_aas.py` – Erstellung von Maschinen-Identifikations-AAS
-- `basyx_utils/` – async REST-Client und Register-Helfer für BaSyx
-- `backend/` – Docker-Compose für BaSyx, Registry, Discovery, UI, Dashboard API
+- Python 3.11+ (recommended)
+- Docker + Docker Compose (for local BaSyx backend)
 
 ## Quickstart
 
-### 1) Python-Abhängigkeiten installieren
+### 1) Install Python dependencies
 
 ```bash
 python -m venv env
@@ -36,14 +52,14 @@ env\\Scripts\\activate
 pip install -r requirements.txt
 ```
 
-### 2) BaSyx-Backend starten (lokal)
+### 2) Start BaSyx backend (local)
 
 ```bash
 cd backend
 docker-compose up -d
 ```
 
-Danach sind standardmäßig erreichbar:
+The following services are available by default:
 
 - AAS Environment: http://localhost:8081
 - AAS Registry: http://localhost:8082
@@ -52,15 +68,15 @@ Danach sind standardmäßig erreichbar:
 - Dashboard API: http://localhost:8085
 - AAS Web UI: http://localhost:3000
 
-### 3) Client starten
+### 3) Start client
 
 ```bash
 python main.py
 ```
 
-## Konfiguration (ENV)
+## Configuration (ENV)
 
-Alle Parameter in `config.py` können per Umgebungsvariable überschrieben werden.
+All parameters in `config.py` can be overridden via environment variables.
 
 ### AAS/BaSyx
 
@@ -75,63 +91,15 @@ Alle Parameter in `config.py` können per Umgebungsvariable überschrieben werde
 
 ### OPC UA
 
-| Variable | Default | Hinweis |
+| Variable | Default | Note |
 |---|---|---|
-| `UA_ENDPOINT_URL` | `opc.tcp://opcua.umati.app:4843` | OPC-UA-Server-Endpoint |
-| `UA_REQUEST_TIMEOUT` | `4` | Sekunden (int) |
-| `UA_MACHINE_INSTANCE_NODEID` | `ns=49;s=MyControledMachine` | NodeId der Maschineninstanz |
-| `UA_PUBLISHING_INTERVAL` | `1000` | Millisekunden (int) |
-
-### Beispiele zum Setzen von Variablen
-
-**PowerShell:**
-
-```powershell
-$env:UA_ENDPOINT_URL = "opc.tcp://my-server:4840"
-$env:UA_MACHINE_INSTANCE_NODEID = "ns=2;s=MyMachine"
-$env:UA_PUBLISHING_INTERVAL = "500"
-python main.py
-```
-
-**Windows CMD:**
-
-```cmd
-set UA_ENDPOINT_URL=opc.tcp://my-server:4840
-set UA_MACHINE_INSTANCE_NODEID=ns=2;s=MyMachine
-set UA_PUBLISHING_INTERVAL=500
-python main.py
-```
-
-## OPC-UA Event-Subscription Ablauf
-
-Der Client geht in `main.py` aktuell in folgenden Schritten vor, um die relevanten Events zu finden und zu verarbeiten:
-
-1. Verbindung zum OPC-UA-Server über `UA_ENDPOINT_URL` und `UA_REQUEST_TIMEOUT`.
-2. Auflösen der Namespace-Indizes für
-	- `http://opcfoundation.org/UA/Machinery/`
-	- `http://opcfoundation.org/UA/Machinery/Jobs/`
-3. Einstieg über die konfigurierte Maschineninstanz `UA_MACHINE_INSTANCE_NODEID`.
-4. Navigation im Adressraum:
-	- `Machine -> MachineryBuildingBlocks -> JobManager -> JobOrderResults`
-5. Lesen der `GeneratesEvent`-References von `JobOrderResults`.
-6. Übernahme der ersten gefundenen Reference als erwarteter EventType (`EVENT_TYPE_NODEID`).
-7. Erstellen einer Subscription mit `UA_PUBLISHING_INTERVAL`.
-8. Aktuell: `subscribe_events()` ohne serverseitigen EventType-Filter (siehe `FIXME` im Code).
-9. Laufende Event-Verarbeitung über Queue:
-	- Der `SubscriptionHandler` legt eingehende Events in `EVENT_QUEUE`.
-	- `process_event(...)` verarbeitet nur Events, deren `EventType` dem zuvor ermittelten `EVENT_TYPE_NODEID` entspricht.
-	- Andere Eventtypen werden geloggt und ignoriert.
-
-Damit wird die fachliche Filterung derzeit clientseitig umgesetzt. Ein serverseitiger Filter auf den exakten EventType ist als nächster Ausbauschritt vorgesehen.
-
-## Hinweise zum aktuellen Stand
-
-- In `main.py` ist das Mapping von empfangenen OPC-UA-Events auf das erwartete `job_data`-Schema noch als `TODO` markiert.
-- Für einen schnellen Funktionstest der BaSyx-Registrierung ohne OPC-UA-Events kann `old_main.py` genutzt werden.
-- Bei bestehenden IDs wird in BaSyx per PUT überschrieben (Upsert-Verhalten).
+| `UA_ENDPOINT_URL` | `opc.tcp://opcua.umati.app:4843` | OPC UA server endpoint |
+| `UA_REQUEST_TIMEOUT` | `4` | Seconds (int) |
+| `UA_MACHINE_INSTANCE_NODEID` | `ns=49;s=MyControledMachine` | NodeId of the machine instance |
+| `UA_PUBLISHING_INTERVAL` | `1000` | Milliseconds (int) |
 
 ## Troubleshooting
 
-- **HTTP 4xx/5xx bei AAS/Submodel-Registrierung:** Prüfen, ob `backend/docker-compose.yml` läuft und die `*_REPO_PATH`-URLs korrekt sind.
-- **Keine OPC-UA-Events:** `UA_MACHINE_INSTANCE_NODEID` und Namespace/Model des Zielservers prüfen.
-- **Timeouts:** `UA_REQUEST_TIMEOUT` erhöhen und Server-Erreichbarkeit testen.
+- **HTTP 4xx/5xx during AAS/submodel registration:** Check whether `backend/docker-compose.yml` is running and the `*_REPO_PATH` URLs are correct.
+- **No OPC UA events:** Verify `UA_MACHINE_INSTANCE_NODEID` and the namespace/model of the target server.
+- **Timeouts:** Increase `UA_REQUEST_TIMEOUT` and check server connectivity.
