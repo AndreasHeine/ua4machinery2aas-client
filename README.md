@@ -141,7 +141,7 @@ Found OPC for Machinery Jobs namespace with index: 23
 Found machine instance (ns=49;s=MyControledMachine): MyControledMachine
 Read machine identification properties: {'ProductInstanceUri': 'ProductInstanceUri-123', 'Manufacturer': {'Text': 'Andreas Heine', 'Locale': None}, 'SerialNumber': 'SerialNumber-123'}
 AAS registration for id: MyControledMachine, status: 204 [Asset Administration Shell Descriptor updated successfully]
-Submodel registration for id: Machinery Job Response ProductInstanceUri-123, status: 204 [Submodel updated successfully]
+Submodel registration for id: Machinery Identification ProductInstanceUri-123, status: 201 [Submodel created successfully]
 Created/Updated AAS for machine identification nsu=http://MyControledMachine-Namespace/UA;s=MyControledMachine {'ProductInstanceUri': 'ProductInstanceUri-123', 'Manufacturer': {'Text': 'Andreas Heine', 'Locale': None}, 'SerialNumber': 'SerialNumber-123'}
 Found OPC for Machinery BuildingBlocks node: LocalizedText(Locale=None, Text='MachineryBuildingBlocks')
 Found OPC for Machinery JobManager node: LocalizedText(Locale=None, Text='JobManager')
@@ -150,13 +150,17 @@ Found 1 GeneratesEvent references from Machinery JobOrderResults node
 Using EventType-NodeId's: MyControledMachineJobOrderResultStatusEventType [ns=49;i=1004] for subscription
 Requested session timeout to be 300000ms, got 3000000ms instead
 Deprecated since spec 1.04, call load_data_type_definitions
-Revised values returned differ from subscription values: CreateSubscriptionResult(SubscriptionId=592243, RevisedPublishingInterval=1000.0, RevisedLifetimeCount=6750, RevisedMaxKeepAliveCount=2250)
+Revised values returned differ from subscription values: CreateSubscriptionResult(SubscriptionId=592247, RevisedPublishingInterval=1000.0, RevisedLifetimeCount=6750, RevisedMaxKeepAliveCount=2250)
 Received new Event of type: MyControledMachineJobOrderResultStatusEventType [ns=49;i=1004] processing...
-AAS registration for id: test_1234, status: 201 [Asset Administration Shell Descriptor created successfully]
-Submodel registration for id: JobOrder test_1234, status: 201 [Submodel created successfully]
-Submodel registration for id: JobState test_1234, status: 201 [Submodel created successfully]
+AAS registration for id: test_12346789, status: 201 [Asset Administration Shell Descriptor created successfully]
+Submodel registration for id: JobOrder test_12346789, status: 201 [Submodel created successfully]
+Submodel registration for id: JobState test_12346789, status: 201 [Submodel created successfully]
 Received new Event of type: MyControledMachineJobOrderResultStatusEventType [ns=49;i=1004] processing...
-AAS registration for id: test_1234, status: 204 [Asset Administration Shell Descriptor updated successfully]
-Submodel registration for id: JobOrder test_1234, status: 204 [Submodel updated successfully]
-Submodel registration for id: JobState test_1234, status: 204 [Submodel updated successfully]
+AAS registration for id: test_12346789, status: 204 [Asset Administration Shell Descriptor updated successfully]
+Submodel registration for id: JobOrder test_12346789, status: 204 [Submodel updated successfully]
+Submodel registration for id: JobState test_12346789, status: 204 [Submodel updated successfully]
+Received new Event of type: MyControledMachineJobOrderResultStatusEventType [ns=49;i=1004] processing...
+AAS registration for id: test_12346789, status: 204 [Asset Administration Shell Descriptor updated successfully]
+Submodel registration for id: JobOrder test_12346789, status: 204 [Submodel updated successfully]
+Submodel registration for id: JobState test_12346789, status: 204 [Submodel updated successfully]
 ```
