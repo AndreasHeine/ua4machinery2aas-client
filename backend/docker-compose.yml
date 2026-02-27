@@ -17,8 +17,8 @@ services:
         condition: service_healthy
       mongo:
         condition: service_healthy
-      # mosquitto:
-      #   condition: service_healthy
+      mosquitto:
+        condition: service_healthy
   aas-registry:
     image: eclipsebasyx/aas-registry-log-mongodb:2.0.0-SNAPSHOT
     container_name: aas-registry
@@ -70,22 +70,22 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-  # mosquitto:
-  #   image: eclipse-mosquitto:2.0.15
-  #   container_name: mosquitto
-  #   ports:
-  #     - '1883:1883'
-  #   volumes:
-  #     - ./mosquitto:/mosquitto
-  #   restart: always
-  #   healthcheck:
-  #     test:
-  #       - CMD-SHELL
-  #       - mosquitto_sub -p 1883 -t 'topic' -C 1 -E -i probe -W 3
-  #     interval: 5s
-  #     timeout: 10s
-  #     start_period: 1s
-  #     retries: 3
+  mosquitto:
+    image: eclipse-mosquitto:2.0.15
+    container_name: mosquitto
+    ports:
+      - '1883:1883'
+    volumes:
+      - ./mosquitto:/mosquitto
+    restart: always
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - mosquitto_sub -p 1883 -t 'topic' -C 1 -E -i probe -W 3
+      interval: 5s
+      timeout: 10s
+      start_period: 1s
+      retries: 3
   aas-web-ui:
     image: eclipsebasyx/aas-gui:SNAPSHOT
     container_name: aas-ui
