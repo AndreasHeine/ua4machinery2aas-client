@@ -1,0 +1,24 @@
+# Git
+.git
+.gitignore
+
+# Python cache/artifacts
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+.pytest_cache/
+.mypy_cache/
+
+# Local virtual env
+env/
+.venv/
+
+# IDE/editor
+.vscode/
+.idea/
+
+# Project docs and local runtime files
+backend/
+*.log
