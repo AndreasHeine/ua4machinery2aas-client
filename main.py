@@ -43,6 +43,13 @@ from config import (
 EVENT_QUEUE: asyncio.Queue[Event] = asyncio.Queue(100)
 EVENT_TYPE_NODEID: str | None = None
 
+
+def safe(getter, default=None):
+    try:
+        return getter()
+    except (KeyError, IndexError, AttributeError, TypeError):
+        return default
+
 class SubscriptionHandler:
     """
     The SubscriptionHandler is used to handle the data that is received for the subscription.
@@ -69,15 +76,15 @@ async def process_event(eventtype_nodeid: str | None = None):
             # TODO: Extract more information from the event data, e.g. from the JobOrder, JobState and JobResponse properties
             # FIXME: write helper functions to extract values from Variant-Class to JSON-serializable data
             "JobOrder": {
-                "JobOrderID": edata["JobOrder"].Value.JobOrderID,
-                "Description": edata["JobOrder"].Value.Description[0].Text,
-                "WorkmasterId": edata["JobOrder"].Value.WorkMasterID[0].ID,
-                "StartTime": f"{edata['JobOrder'].Value.StartTime}",
-                "EndTime": f"{edata['JobOrder'].Value.EndTime}",
-                "Priority": edata["JobOrder"].Value.Priority,
+                "JobOrderID": edata["JobOrder"].Value.JobOrderID, # Mandatory field, should always be present
+                "Description": safe(lambda: edata["JobOrder"].Value.Description[0].Text, None),
+                "WorkmasterId": safe(lambda: edata["JobOrder"].Value.WorkMasterID[0].ID, None),
+                "StartTime": safe(lambda: f"{edata['JobOrder'].Value.StartTime}", None),
+                "EndTime": safe(lambda: f"{edata['JobOrder'].Value.EndTime}", None),
+                "Priority": safe(lambda: edata["JobOrder"].Value.Priority, None),
             },
-            "JobState": edata["JobState"].Value[0].StateText.Text,
-            "JobStateNumber": edata["JobState"].Value[0].StateNumber
+            "JobState": safe(lambda: edata["JobState"].Value[0].StateText.Text, None),
+            "JobStateNumber": safe(lambda: edata["JobState"].Value[0].StateNumber, None)
         }
         await create_aas_for_job(job_data=data)
         return
