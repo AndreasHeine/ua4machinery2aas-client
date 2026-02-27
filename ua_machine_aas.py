@@ -23,7 +23,7 @@ async def create_aas_for_identification(id: str, identification: dict) -> None:
 
 def addIdentificationSubmodel(identification: dict, aas: model.AssetAdministrationShell) -> model.Submodel:
     id = identification["ProductInstanceUri"]
-    submodel_id = f"Machinery Job Response {id}"
+    submodel_id = f"Machinery Identification {id}"
     submodel = model.Submodel(
         id_=model.Identifier(submodel_id),
         id_short="MachineryIdentification",
