@@ -1,8 +1,17 @@
-# OPC for Machinery to AAS Client
+# OPC for Machinery to AAS Client (Event-Driven Bridge from OPC UA to BaSyx)
 
-Python client for connecting to an OPC UA server and registering AAS/Submodels in a BaSyx Backend.
+What this program does (in simple terms):
+- It connects to a machine's OPC UA server.
+- It listens for specific machine/job events.
+- When a matching event arrives, it extracts relevant job information.
+- It sends that information to create/update an Asset Administration Shell (AAS)
+    representation via the BaSyx APIs.
 
-The client connects to a machine, subscribes to events, and creates AAS data structures based on those events.
+Why this is useful:
+- OPC UA is used by machines to expose data and events.
+- AAS is a standardized digital representation of an asset (for example, a machine
+    or a job) so IT systems can consume it consistently.
+- This script acts as a translator/bridge: machine events in, AAS updates out.
 
 ## OPC UA Event Subscription Flow
 
