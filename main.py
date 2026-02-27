@@ -30,7 +30,7 @@ Configuration:
 import asyncio
 from asyncua import Client, Node, ua
 from asyncua.common.events import Event
-from common.helper import make_nodeid_string
+from common.helper import make_nodeid_string, variant_to_json_serializable
 from ua_job_aas import create_aas_for_job
 
 from config import (
@@ -39,17 +39,11 @@ from config import (
     UA_MACHINE_INSTANCE_NODEID,
     UA_PUBLISHING_INTERVAL
 )
+from ua_machine_aas import create_aas_for_identification
 
 EVENT_QUEUE: asyncio.Queue[Event] = asyncio.Queue(100)
 EVENT_TYPE_NODEID: str | None = None
 EVENT_TYPE_DISPLAYNAME: str | None = None
-
-
-def safe(getter, default=None):
-    try:
-        return getter()
-    except (KeyError, IndexError, AttributeError, TypeError):
-        return default
 
 class SubscriptionHandler:
     """
@@ -88,23 +82,9 @@ async def process_event(eventtype_nodeid: str | None = None, eventtype_displayna
     # against misconfigured filters or server-side model changes.
     if (event.EventType.to_string() == eventtype_nodeid):
         print(f"Received new Event of type: {eventtype_displayname} [{event.EventType.to_string()}] processing...")
-        edata = event.get_event_props_as_fields_dict()
-        data = {
-            # TODO: Extract more information from the event data, e.g. from the JobOrder, JobState and JobResponse properties
-            # FIXME: write helper functions to extract values from Variant-Class to JSON-serializable data
-            "JobOrder": {
-                "JobOrderID": edata["JobOrder"].Value.JobOrderID, # Mandatory field, should always be present
-                "Description": safe(lambda: edata["JobOrder"].Value.Description[0].Text, None),
-                "WorkmasterId": safe(lambda: edata["JobOrder"].Value.WorkMasterID[0].ID, None),
-                "StartTime": safe(lambda: f"{edata['JobOrder'].Value.StartTime}", None),
-                "EndTime": safe(lambda: f"{edata['JobOrder'].Value.EndTime}", None),
-                "Priority": safe(lambda: edata["JobOrder"].Value.Priority, None),
-            },
-            "JobState": safe(lambda: edata["JobState"].Value[0].StateText.Text, None),
-            "JobStateNumber": safe(lambda: edata["JobState"].Value[0].StateNumber, None)
-        }
-        print(f"Creating AAS for Job with ID: {data['JobOrder']['JobOrderID']}")
-        await create_aas_for_job(job_data=data)
+        await create_aas_for_job(
+            event.get_event_props_as_fields_dict()
+        )
         return
     else:
         print(f"Received other event type, ignoring... EventType: {event.EventType.to_string()}")
@@ -123,6 +103,8 @@ async def main():
     namespace_array = await client.get_namespace_array()
     print(f"Namespace Array: {namespace_array}")
 
+    di_index = namespace_array.index("http://opcfoundation.org/UA/DI/")
+    print(f"Found OPC for DI namespace with index: {di_index}")
     machinery_index = namespace_array.index("http://opcfoundation.org/UA/Machinery/")
     print(f"Found OPC for Machinery namespace with index: {machinery_index}")
     machinery_jobs_index = namespace_array.index("http://opcfoundation.org/UA/Machinery/Jobs/")
@@ -132,9 +114,19 @@ async def main():
     # concrete NodeId string with namespace index for this server session.
     machine_nodeid = make_nodeid_string(UA_MACHINE_INSTANCE_NODEID, namespace_array)
     machine_node: Node = client.get_node(machine_nodeid)
-    print(f"Found machine instance ({machine_nodeid}): {await machine_node.read_display_name()}")
+    machine_displayname = await machine_node.read_display_name()
+    print(f"Found machine instance ({machine_nodeid}): {machine_displayname.Text}")
 
-    # TODO: Extract Machine Identification information from the machine_node and create an AAS for the machine if it does not exist yet
+    identification_node: Node = await machine_node.get_child(f"{di_index}:Identification")
+    identification_properties = await identification_node.get_properties()
+    identification = {}
+    for prop in identification_properties:
+        prop_name = await prop.read_display_name()
+        prop_value: ua.DataValue = await prop.read_data_value()
+        identification[prop_name.Text] = variant_to_json_serializable(prop_value.Value)
+    print(f"Read machine identification properties: {identification}")
+    await create_aas_for_identification(machine_displayname.Text, identification)
+    print("Created/Updated AAS for machine identification", UA_MACHINE_INSTANCE_NODEID, identification)
 
     building_blocks_node: Node = await machine_node.get_child(f"{machinery_index}:MachineryBuildingBlocks")
     print(f"Found OPC for Machinery BuildingBlocks node: {await building_blocks_node.read_display_name()}")

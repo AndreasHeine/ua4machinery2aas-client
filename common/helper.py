@@ -1,5 +1,7 @@
 import base64
+import re
 import uuid
+from typing import Any
 
 from asyncua import ua
 
@@ -14,17 +16,30 @@ NODEID_TYPE_TO_PREFIX: dict[ua.NodeIdType, str] = {
 }
 
 
-def clean_id(id: str) -> str:
+def clean_id(value: str) -> str:
     """
-    Cleans an ID by removing spaces and replacing hyphens with underscores.
+    Cleans an ID so it can be used as AAS idShort-like value.
+    Result contains only letters, digits and underscores.
 
     Args:
-        id (str): The ID string to be cleaned
+        value (str): The ID string to be cleaned
 
     Returns:
-        str: The cleaned ID with spaces removed and hyphens replaced by underscores
+        str: The cleaned ID containing only [A-Za-z0-9_]
+
+    Raises:
+        ValueError: If the cleaned ID is empty or does not start with a letter.
     """
-    return f"{id.replace(' ', '_').replace('-', '_')}"
+    cleaned_id = re.sub(r'[^A-Za-z0-9_]', '_', str(value).strip())
+    cleaned_id = re.sub(r'_+', '_', cleaned_id).strip('_')
+
+    if not cleaned_id:
+        raise ValueError('Invalid id_short: no valid characters remain after cleaning.')
+
+    if not cleaned_id[0].isalpha():
+        raise ValueError('Invalid id_short: cleaned value must start with a letter (Constraint AASd-002).')
+
+    return cleaned_id
 
 
 def utf8_base64_url_encode(text: str) -> str:
@@ -114,3 +129,62 @@ def make_nodeid_string(enid_string: str, namespace_array: list[str]) -> str:
     """
     enid = make_expanded_nodeid_from_string(enid_string, namespace_array)
     return make_nodeid_string_from_expanded_nodeid(enid)
+
+
+def variant_to_json_serializable(variant: Any) -> Any:
+    def _serialize(value: Any, seen: set[int]) -> Any:
+        if value is None:
+            return None
+        if isinstance(value, (str, int, float, bool)):
+            return value
+        if isinstance(value, ua.Variant):
+            return _serialize(value.Value, seen)
+        if isinstance(value, uuid.UUID):
+            return str(value)
+        if isinstance(value, bytes):
+            return base64.b64encode(value).decode('ascii')
+
+        obj_id = id(value)
+
+        if isinstance(value, dict):
+            if obj_id in seen:
+                return '<circular-reference>'
+            seen.add(obj_id)
+            return {
+                str(key): _serialize(item, seen)
+                for key, item in value.items()
+            }
+
+        if isinstance(value, (list, tuple, set)):
+            if obj_id in seen:
+                return '<circular-reference>'
+            seen.add(obj_id)
+            return [_serialize(item, seen) for item in value]
+
+        if hasattr(value, '__dict__'):
+            if obj_id in seen:
+                return '<circular-reference>'
+            seen.add(obj_id)
+            return {
+                key: _serialize(item, seen)
+                for key, item in vars(value).items()
+                if not key.startswith('_') and not callable(item)
+            }
+
+        if hasattr(value, '__slots__'):
+            if obj_id in seen:
+                return '<circular-reference>'
+            seen.add(obj_id)
+            result: dict[str, Any] = {}
+            for slot in value.__slots__:
+                if slot.startswith('_') or not hasattr(value, slot):
+                    continue
+                item = getattr(value, slot)
+                if callable(item):
+                    continue
+                result[slot] = _serialize(item, seen)
+            return result
+
+        return str(value)
+
+    return _serialize(variant, set())

@@ -1,9 +1,11 @@
+from asyncua import ua
 from basyx.aas import model
 from basyx_utils.register import register_in_basyx
+from common.helper import clean_id
 
 
 async def create_aas_for_identification(id: str, identification: dict) -> None:
-    aas_id = id
+    aas_id = clean_id(id)
     aas_short_id = f"AAS_Machine_{aas_id}"
     aas = model.AssetAdministrationShell(
         id_=model.Identifier(aas_id),
@@ -40,7 +42,7 @@ def addIdentificationSubmodel(identification: dict, aas: model.AssetAdministrati
             model.Property(
                 id_short='Manufacturer',
                 value_type=model.datatypes.String,
-                value=identification["Manufacturer"],
+                value=identification["Manufacturer"]["Text"],
                 semantic_id=model.ExternalReference(
                     (model.Key(
                         type_=model.KeyTypes.GLOBAL_REFERENCE,
