@@ -42,6 +42,7 @@ from config import (
 
 EVENT_QUEUE: asyncio.Queue[Event] = asyncio.Queue(100)
 EVENT_TYPE_NODEID: str | None = None
+EVENT_TYPE_DISPLAYNAME: str | None = None
 
 
 def safe(getter, default=None):
@@ -79,14 +80,14 @@ class SubscriptionHandler:
         print(f"Subscription Status Change: {status}")
 
 
-async def process_event(eventtype_nodeid: str | None = None):
+async def process_event(eventtype_nodeid: str | None = None, eventtype_displayname: str | None = None):
     event = await EVENT_QUEUE.get()
     if event is None:
         return
     # Keep this check even with server-side filtering as a defensive guard
     # against misconfigured filters or server-side model changes.
     if (event.EventType.to_string() == eventtype_nodeid):
-        print("Received ISA95 Job Order Status Event")
+        print(f"Received new Event of type: {eventtype_displayname} [{event.EventType.to_string()}] processing...")
         edata = event.get_event_props_as_fields_dict()
         data = {
             # TODO: Extract more information from the event data, e.g. from the JobOrder, JobState and JobResponse properties
@@ -102,6 +103,7 @@ async def process_event(eventtype_nodeid: str | None = None):
             "JobState": safe(lambda: edata["JobState"].Value[0].StateText.Text, None),
             "JobStateNumber": safe(lambda: edata["JobState"].Value[0].StateNumber, None)
         }
+        print(f"Creating AAS for Job with ID: {data['JobOrder']['JobOrderID']}")
         await create_aas_for_job(job_data=data)
         return
     else:
@@ -148,10 +150,12 @@ async def main():
     if len(references) == 0:
         print("No GeneratesEvent reference found for Machinery JobOrderResults node, cannot subscribe to events!")
         return
+
     ref_des = references[0]
     EVENT_TYPE_NODEID = ref_des.NodeId.to_string()
     found_eventtype_node = client.get_node(EVENT_TYPE_NODEID)
-    print(f"Using EventType-NodeId: {EVENT_TYPE_NODEID} -> {await found_eventtype_node.read_display_name()}")
+    EVENT_TYPE_DISPLAYNAME: ua.LocalizedText = await found_eventtype_node.read_display_name()
+    print(f"Using EventType-NodeId's: {EVENT_TYPE_DISPLAYNAME.Text} [{EVENT_TYPE_NODEID}] for subscription")
 
     handler = SubscriptionHandler()
     subscription = await client.create_subscription(
@@ -162,7 +166,7 @@ async def main():
     await subscription.subscribe_events(
         sourcenode=job_order_results_node,
         evtypes=[
-            found_eventtype_node,
+            found_eventtype_node
         ],
         where_clause_generation=True
     )
@@ -177,7 +181,7 @@ async def main():
         # Polling keeps the loop simple and aligns processing cadence with the
         # configured publishing interval.
         if EVENT_QUEUE.qsize() > 0:
-            await process_event(EVENT_TYPE_NODEID)
+            await process_event(EVENT_TYPE_NODEID, EVENT_TYPE_DISPLAYNAME.Text)
         else:
             await asyncio.sleep(UA_PUBLISHING_INTERVAL / 1000)  # Sleep for the publishing interval
 
