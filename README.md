@@ -121,7 +121,7 @@ All parameters in `config.py` can be overridden via environment variables.
 |---|---|---|
 | `UA_ENDPOINT_URL` | `opc.tcp://opcua.umati.app:4843` | OPC UA server endpoint |
 | `UA_REQUEST_TIMEOUT` | `4` | Seconds (int) |
-| `UA_MACHINE_INSTANCE_NODEID` | `ns=49;s=MyControledMachine` | NodeId of the machine instance |
+| `UA_MACHINE_INSTANCE_NODEID` | `nsu=http://MyControledMachine-Namespace/UA;s=MyControledMachine` | NodeId of the machine instance |
 | `UA_PUBLISHING_INTERVAL` | `1000` | Milliseconds (int) |
 
 ## Troubleshooting
