@@ -62,6 +62,22 @@ class SubscriptionHandler:
         """
         await EVENT_QUEUE.put(event)
 
+    async def datachange_notification(self, node: Node, val, data):
+        """
+        Callback for asyncua Subscription.
+        This method will be called when the Client received a data change message from the Server.
+        We use this to detect if the subscription is still alive, as some OPC UA Servers may silently drop subscriptions after some time.
+        """
+        # print(f"DataChange Notification - Node: {node}, Value: {val}, Data: {data}")
+
+    async def status_change_notification(self, status):
+        """
+        Callback for asyncua Subscription.
+        This method will be called when the Client received a status change message from the Server.
+        We can use this to detect if the subscription is still alive or if there are any issues with the connection.
+        """
+        print(f"Subscription Status Change: {status}")
+
 
 async def process_event(eventtype_nodeid: str | None = None):
     event = await EVENT_QUEUE.get()
@@ -149,6 +165,13 @@ async def main():
             found_eventtype_node,
         ],
         where_clause_generation=True
+    )
+    await subscription.subscribe_data_change(
+        client.get_node(ua.ObjectIds.Server_ServerStatus_CurrentTime), 
+        ua.AttributeIds.Value, 
+        1, 
+        ua.MonitoringMode.Reporting,
+        5000 # 5 second sampling interval for the data change subscription, just to keep the subscription alive
     )
     while True:
         # Polling keeps the loop simple and aligns processing cadence with the
