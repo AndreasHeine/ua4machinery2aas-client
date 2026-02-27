@@ -53,15 +53,7 @@ Event filtering is already done server-side in the subscription; client-side `Ev
 
 ## Quickstart
 
-### 1) Install Python dependencies
-
-```bash
-python -m venv env
-env\\Scripts\\activate
-pip install -r requirements.txt
-```
-
-### 2) Start BaSyx backend (local)
+### 1) Start BaSyx backend (local)
 
 ```bash
 cd backend
@@ -78,7 +70,7 @@ The following services are available by default:
 - AAS Web UI: http://localhost:3000
 
 
-### 3) Start client via Docker image (GHCR)
+### 2) Start client via Docker image (GHCR)
 
 The client image is available at:
 
