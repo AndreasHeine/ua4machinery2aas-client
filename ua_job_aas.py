@@ -1,9 +1,10 @@
 from basyx.aas import model
 from basyx_utils.register import register_in_basyx
+from common.helper import clean_id
 
 
 async def create_aas_for_job(job_data: dict) -> None:
-    aas_id = job_data['JobOrder']['JobOrderID']
+    aas_id = clean_id(job_data['JobOrder']['JobOrderID'])
     aas_short_id = f"AAS_JOB_{aas_id}"
     aas = model.AssetAdministrationShell(
         id_=model.Identifier(aas_id),
