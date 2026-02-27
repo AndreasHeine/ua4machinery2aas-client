@@ -129,3 +129,34 @@ All parameters in `config.py` can be overridden via environment variables.
 - **HTTP 4xx/5xx during AAS/submodel registration:** Check whether `backend/docker-compose.yml` is running and the `*_REPO_PATH` URLs are correct.
 - **No OPC UA events:** Verify `UA_MACHINE_INSTANCE_NODEID` and the namespace/model of the target server.
 - **Timeouts:** Increase `UA_REQUEST_TIMEOUT` and check server connectivity.
+
+## Logs
+
+```
+2026-02-27 14:25:29.922 | Connected to OPC UA Server at opc.tcp://opcua.umati.app:4843
+2026-02-27 14:25:34.706 | Namespace Array: ['http://opcfoundation.org/UA/', 'urn:SampleServer', 'http://opcfoundation.org/UA/DI/', 'http://opcfoundation.org/UA/Machinery/', 'http://opcfoundation.org/UA/IA/', 'http://opcfoundation.org/UA/MachineTool/', 'http://opcfoundation.org/UA/PlasticsRubber/GeneralTypes/', 'http://opcfoundation.org/UA/PlasticsRubber/IMM2MES/', 'http://opcfoundation.org/UA/PlasticsRubber/ImmToRobot/', 'http://opcfoundation.org/UA/PlasticsRubber/umati/OPC40079ForUmati/', 'http://opcfoundation.org/UA/PlasticsRubber/TCD/', 'http://opcfoundation.org/UA/PlasticsRubber/HotRunner/', 'http://opcfoundation.org/UA/PlasticsRubber/LDS/', 'http://opcfoundation.org/UA/PlasticsRubber/Extrusion_v2/GeneralTypes/', 'http://opcfoundation.org/UA/PlasticsRubber/Extrusion_v2/Cutter/', 'http://opcfoundation.org/UA/PlasticsRubber/Extrusion_v2/HaulOff/', 'http://opcfoundation.org/UA/PlasticsRubber/Extrusion_v2/Corrugator/', 'http://opcfoundation.org/UA/PlasticsRubber/Extrusion_v2/Extruder/', 'http://opcfoundation.org/UA/PlasticsRubber/umati/generic/', 'http://opcfoundation.org/UA/Robotics/', 'http://opcfoundation.org/UA/Woodworking/', 'http://opcfoundation.org/UA/LaserSystems/', 'http://opcfoundation.org/UA/ISA95-JOBCONTROL_V2/', 'http://opcfoundation.org/UA/Machinery/Jobs/', 'http://opcfoundation.org/UA/Dictionary/IRDI', 'http://opcfoundation.org/UA/PADIM/', 'http://opcfoundation.org/UA/Machinery/ProcessValues/', 'http://opcfoundation.org/UA/MetalForming/', 'http://opcfoundation.org/UA/ECM/', 'http://opcfoundation.org/UA/Machinery/Energy/', 'http://umati.org/UA/ShowCaseMachineTool/', 'http://yourorganisation.org/MachineTool-Example/', 'http://vdma.org/OPCRoboticsTestServer/', 'http://samplemanufacturer.com/umati_plasticsrubber_generic_sample_instance/', 'http://samplemanufacturer.com/umati_OPC40077_sample_instance/', 'http://samplemanufacturer.org/opc40079forumati_sample_instance/', 'http://samplemanufacturer.com/umati_opc40084-3_sample_instance/', 'http://samplemanufacturer.org/umati_opc40082-1_sample_instance/', 'http://samplemanufacturer.org/umati_opc40082-2_sample_instance/', 'http://samplemanufacturer.org/umati_opc40082-3_sample_instance/', 'http://samplemanufacturer.org/umati_opc40084-9_sample_instance/', 'http://samplemanufacturer.org/umati_opc40084-11_sample_instance/', 'http://basyskom.com/woodworking_demo/', 'http://opcfoundation.org/UA/PAEFS/', 'http://umati.org/UA/1.5/brownfield/', 'http://vdma.org/UA/LaserSystem-Example/', 'https://www.grinding.ch/UA/instances/umati/', 'http://schulergroup.com/UA/example/', 'http://vdw.de/UA/MachineTool/Energy-Example/', 'http://MyControledMachine-Namespace/UA', 'http://mynewmachinenamespace/UA']
+2026-02-27 14:25:34.706 | Found OPC for DI namespace with index: 2
+2026-02-27 14:25:34.706 | Found OPC for Machinery namespace with index: 3
+2026-02-27 14:25:34.706 | Found OPC for Machinery Jobs namespace with index: 23
+2026-02-27 14:25:34.725 | Found machine instance (ns=49;s=MyControledMachine): MyControledMachine
+2026-02-27 14:25:34.903 | Read machine identification properties: {'ProductInstanceUri': 'ProductInstanceUri-123', 'Manufacturer': {'Text': 'Andreas Heine', 'Locale': None}, 'SerialNumber': 'SerialNumber-123'}
+2026-02-27 14:25:34.948 | AAS registration for id: MyControledMachine, status: 204 [Asset Administration Shell Descriptor updated successfully]
+2026-02-27 14:25:34.962 | Submodel registration for id: Machinery Job Response ProductInstanceUri-123, status: 204 [Submodel updated successfully]
+2026-02-27 14:25:34.962 | Created/Updated AAS for machine identification nsu=http://MyControledMachine-Namespace/UA;s=MyControledMachine {'ProductInstanceUri': 'ProductInstanceUri-123', 'Manufacturer': {'Text': 'Andreas Heine', 'Locale': None}, 'SerialNumber': 'SerialNumber-123'}
+2026-02-27 14:25:34.999 | Found OPC for Machinery BuildingBlocks node: LocalizedText(Locale=None, Text='MachineryBuildingBlocks')
+2026-02-27 14:25:35.037 | Found OPC for Machinery JobManager node: LocalizedText(Locale=None, Text='JobManager')
+2026-02-27 14:25:35.074 | Found OPC for Machinery JobOrderResults node: LocalizedText(Locale=None, Text='JobOrderResults')
+2026-02-27 14:25:35.093 | Found 1 GeneratesEvent references from Machinery JobOrderResults node
+2026-02-27 14:25:35.112 | Using EventType-NodeId's: MyControledMachineJobOrderResultStatusEventType [ns=49;i=1004] for subscription
+2026-02-27 14:25:29.886 | Requested session timeout to be 300000ms, got 3000000ms instead
+2026-02-27 14:25:32.754 | Deprecated since spec 1.04, call load_data_type_definitions
+2026-02-27 14:25:35.154 | Revised values returned differ from subscription values: CreateSubscriptionResult(SubscriptionId=592243, RevisedPublishingInterval=1000.0, RevisedLifetimeCount=6750, RevisedMaxKeepAliveCount=2250)
+2026-02-27 14:26:07.711 | Received new Event of type: MyControledMachineJobOrderResultStatusEventType [ns=49;i=1004] processing...
+2026-02-27 14:26:07.738 | AAS registration for id: test_1234, status: 201 [Asset Administration Shell Descriptor created successfully]
+2026-02-27 14:26:07.771 | Submodel registration for id: JobOrder test_1234, status: 201 [Submodel created successfully]
+2026-02-27 14:26:07.789 | Submodel registration for id: JobState test_1234, status: 201 [Submodel created successfully]
+2026-02-27 14:26:08.790 | Received new Event of type: MyControledMachineJobOrderResultStatusEventType [ns=49;i=1004] processing...
+2026-02-27 14:26:08.807 | AAS registration for id: test_1234, status: 204 [Asset Administration Shell Descriptor updated successfully]
+2026-02-27 14:26:08.821 | Submodel registration for id: JobOrder test_1234, status: 204 [Submodel updated successfully]
+2026-02-27 14:26:08.834 | Submodel registration for id: JobState test_1234, status: 204 [Submodel updated successfully]
+```
