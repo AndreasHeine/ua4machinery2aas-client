@@ -77,10 +77,35 @@ The following services are available by default:
 - Dashboard API: http://localhost:8085
 - AAS Web UI: http://localhost:3000
 
-### 3) Start client
+
+### 3) Start client via Docker image (GHCR)
+
+The client image is available at:
+
+`ghcr.io/andreasheine/ua4machinery2aas-client:main`
+
+Run with the provided compose file:
 
 ```bash
-python main.py
+docker-compose up -d
+```
+
+or directly:
+
+```bash
+docker run --rm \
+	--add-host=host.docker.internal:host-gateway \
+	-e AAS_ENV_BASE_URL=http://host.docker.internal:8081 \
+	-e AAS_ENV_REPO_PATH=http://host.docker.internal:8081/shells \
+	-e SUBMODEL_ENV_REPO_PATH=http://host.docker.internal:8081/submodels \
+	-e CD_ENV_REPO_PATH=http://host.docker.internal:8081/concept-descriptions \
+	-e AAS_DISCOVERY_PATH=http://host.docker.internal:8084/lookup/shells \
+	-e DASHBOARD_SERVICE_PATH=http://host.docker.internal:8085/api/elements \
+	-e UA_ENDPOINT_URL=opc.tcp://opcua.umati.app:4843 \
+	-e UA_REQUEST_TIMEOUT=4 \
+	-e UA_MACHINE_INSTANCE_NODEID=nsu=http://MyControledMachine-Namespace/UA;s=MyControledMachine \
+	-e UA_PUBLISHING_INTERVAL=1000 \
+	ghcr.io/andreasheine/ua4machinery2aas-client:main
 ```
 
 ## Configuration (ENV)
