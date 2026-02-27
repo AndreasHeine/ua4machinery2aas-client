@@ -1,4 +1,4 @@
-# OPC for Machinery to AAS Client (Event-Driven Bridge from OPC UA to BaSyx)
+# OPC for Machinery to AAS Client
 
 What this program does (in simple terms):
 - It connects to a machine's OPC UA server.
