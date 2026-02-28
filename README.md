@@ -13,6 +13,10 @@ Why this is useful:
     or a job) so IT systems can consume it consistently.
 - This script acts as a translator/bridge: machine events in, AAS updates out.
 
+## Basyx
+
+![Basyx-AAS](img/basyx-aas.png)
+
 ## OPC UA Event Subscription Flow
 
 In `main.py`, the client currently performs the following steps to find and process relevant events:
