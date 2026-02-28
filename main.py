@@ -27,23 +27,20 @@ Configuration:
 - All runtime settings (server URLs, node id, timing) come from `config.py`
     and can be overridden through environment variables.
 """
+
 import asyncio
 from asyncua import Client, Node, ua
 from asyncua.common.events import Event
 from common.helper import make_nodeid_string, variant_to_json_serializable
 from ua_job_aas import create_aas_for_job
 
-from config import (
-    UA_ENDPOINT_URL,
-    UA_REQUEST_TIMEOUT,
-    UA_MACHINE_INSTANCE_NODEID,
-    UA_PUBLISHING_INTERVAL
-)
+from config import UA_ENDPOINT_URL, UA_REQUEST_TIMEOUT, UA_MACHINE_INSTANCE_NODEID, UA_PUBLISHING_INTERVAL
 from ua_machine_aas import create_aas_for_identification
 
 EVENT_QUEUE: asyncio.Queue[Event] = asyncio.Queue(100)
 EVENT_TYPE_NODEID: str | None = None
 EVENT_TYPE_DISPLAYNAME: str | None = None
+
 
 class SubscriptionHandler:
     """
@@ -80,15 +77,14 @@ async def process_event(eventtype_nodeid: str | None = None, eventtype_displayna
         return
     # Keep this check even with server-side filtering as a defensive guard
     # against misconfigured filters or server-side model changes.
-    if (event.EventType.to_string() == eventtype_nodeid):
+    if event.EventType.to_string() == eventtype_nodeid:
         print(f"Received new Event of type: {eventtype_displayname} [{event.EventType.to_string()}] processing...")
-        await create_aas_for_job(
-            event.get_event_props_as_fields_dict()
-        )
+        await create_aas_for_job(event.get_event_props_as_fields_dict())
         return
     else:
         print(f"Received other event type, ignoring... EventType: {event.EventType.to_string()}")
         return
+
 
 async def main():
     client = Client(url=UA_ENDPOINT_URL, timeout=UA_REQUEST_TIMEOUT)
@@ -97,8 +93,8 @@ async def main():
 
     # Load custom structure/type metadata so event payload fields can be
     # deserialized into typed Python objects instead of opaque Variants.
-    await client.load_data_type_definitions() # OPC UA v1.04 Structures
-    await client.load_type_definitions() # OPC UA v1.03 Structures
+    await client.load_data_type_definitions()  # OPC UA v1.04 Structures
+    await client.load_type_definitions()  # OPC UA v1.03 Structures
 
     namespace_array = await client.get_namespace_array()
     print(f"Namespace Array: {namespace_array}")
@@ -150,24 +146,16 @@ async def main():
     print(f"Using EventType-NodeId's: {EVENT_TYPE_DISPLAYNAME.Text} [{EVENT_TYPE_NODEID}] for subscription")
 
     handler = SubscriptionHandler()
-    subscription = await client.create_subscription(
-        period=UA_PUBLISHING_INTERVAL,
-        handler=handler,
-        publishing=True
-    )
+    subscription = await client.create_subscription(period=UA_PUBLISHING_INTERVAL, handler=handler, publishing=True)
     await subscription.subscribe_events(
-        sourcenode=job_order_results_node,
-        evtypes=[
-            found_eventtype_node
-        ],
-        where_clause_generation=True
+        sourcenode=job_order_results_node, evtypes=[found_eventtype_node], where_clause_generation=True
     )
     await subscription.subscribe_data_change(
-        client.get_node(ua.ObjectIds.Server_ServerStatus_CurrentTime), 
-        ua.AttributeIds.Value, 
-        1, 
+        client.get_node(ua.ObjectIds.Server_ServerStatus_CurrentTime),
+        ua.AttributeIds.Value,
+        1,
         ua.MonitoringMode.Reporting,
-        5000 # 5 second sampling interval for the data change subscription, just to keep the subscription alive
+        5000,  # 5 second sampling interval for the data change subscription, just to keep the subscription alive
     )
     while True:
         # Polling keeps the loop simple and aligns processing cadence with the

@@ -12,7 +12,7 @@ AAS_HTTP_STATUS_CODES = {
     403: "Forbidden",
     404: "Not Found",
     409: "Conflict, a resource which shall be created exists already. Might be thrown if a Submodel or SubmodelElement with the same ShortId is contained in a POST request",
-    500: "Internal Server Error"
+    500: "Internal Server Error",
 }
 
 SM_HTTP_STATUS_CODES = {
@@ -24,7 +24,7 @@ SM_HTTP_STATUS_CODES = {
     403: "Forbidden",
     404: "Not Found",
     409: "Conflict, a resource which shall be created exists already. Might be thrown if a Submodel or SubmodelElement with the same ShortId is contained in a POST request",
-    500: "Internal Server Error"
+    500: "Internal Server Error",
 }
 
 
@@ -38,8 +38,9 @@ async def post_aas_async(aas_repo_url: str, aas: model.AssetAdministrationShell)
         return await client.post_aas(aas_repo_url, aas)
 
 
-async def add_aas_to_basyx_async(aas_repo_url: str, aas: model.AssetAdministrationShell,
-                                 overwrite_existing: bool = True) -> httpx.Response:
+async def add_aas_to_basyx_async(
+    aas_repo_url: str, aas: model.AssetAdministrationShell, overwrite_existing: bool = True
+) -> httpx.Response:
     """
     Async version of add_aas_to_basyx. Adds an Asset Administration Shell to the BaSyx repository.
 
@@ -49,8 +50,9 @@ async def add_aas_to_basyx_async(aas_repo_url: str, aas: model.AssetAdministrati
         return await client.add_aas_to_basyx(aas_repo_url, aas, overwrite_existing)
 
 
-async def add_submodel_to_basyx_async(submodel_repo_url: str, submodel: model.Submodel,
-                                      overwrite_existing: bool = True) -> httpx.Response:
+async def add_submodel_to_basyx_async(
+    submodel_repo_url: str, submodel: model.Submodel, overwrite_existing: bool = True
+) -> httpx.Response:
     """
     Async version of add_submodel_to_basyx. Adds a Submodel to the BaSyx repository.
 

@@ -5,7 +5,7 @@ Async BaSyx Client using httpx for async HTTP requests.
 from basyx.aas import model
 import basyx.aas.adapter.json
 import httpx
-import json 
+import json
 from typing import Optional
 from common.helper import utf8_base64_url_encode
 
@@ -23,9 +23,7 @@ class AsyncBaSyxClient:
         Args:
             timeout (float): Request timeout in seconds. Default: 30.0
         """
-        self.headers = {
-            "Content-Type": "application/json"
-        }
+        self.headers = {"Content-Type": "application/json"}
         self.timeout = timeout
         self._client: Optional[httpx.AsyncClient] = None
 
@@ -72,9 +70,7 @@ class AsyncBaSyxClient:
 
     def reset_headers(self):
         """Reset headers to the default Content-Type."""
-        self.headers = {
-            "Content-Type": "application/json"
-        }
+        self.headers = {"Content-Type": "application/json"}
 
     async def post_aas(self, aas_repo_url: str, aas: model.AssetAdministrationShell) -> httpx.Response:
         """
@@ -105,8 +101,9 @@ class AsyncBaSyxClient:
         url = f"{aas_repo_url}/{utf8_base64_url_encode(aas.id)}"
         return await self.client.put(url, content=data, headers=self.headers)
 
-    async def add_aas_to_basyx(self, aas_repo_url: str, aas: model.AssetAdministrationShell,
-                               overwrite_existing: bool = True) -> httpx.Response:
+    async def add_aas_to_basyx(
+        self, aas_repo_url: str, aas: model.AssetAdministrationShell, overwrite_existing: bool = True
+    ) -> httpx.Response:
         """
         Adds an Asset Administration Shell to the BaSyx repository or overwrites an existing one.
 
@@ -152,8 +149,9 @@ class AsyncBaSyxClient:
         data = json.dumps(submodel, cls=basyx.aas.adapter.json.AASToJsonEncoder, indent=2)
         return await self.client.put(submodel_repo_url, content=data, headers=self.headers)
 
-    async def add_submodel_to_basyx(self, submodel_repo_url: str, submodel: model.Submodel,
-                                    overwrite_existing: bool = True) -> httpx.Response:
+    async def add_submodel_to_basyx(
+        self, submodel_repo_url: str, submodel: model.Submodel, overwrite_existing: bool = True
+    ) -> httpx.Response:
         """
         Adds a Submodel to the BaSyx repository or overwrites an existing one.
 
@@ -172,8 +170,9 @@ class AsyncBaSyxClient:
             return await self.put_submodel(url, submodel)
         return res
 
-    async def update_submodelelement_in_basyx(self, submodel_repo_url: str, submodel_id: str,
-                                              submodel_element: model.SubmodelElement) -> httpx.Response:
+    async def update_submodelelement_in_basyx(
+        self, submodel_repo_url: str, submodel_id: str, submodel_element: model.SubmodelElement
+    ) -> httpx.Response:
         """
         Updates a Submodel Element via PATCH at the BaSyx endpoint.
 
@@ -202,8 +201,9 @@ class AsyncBaSyxClient:
         data = json.dumps(body, cls=basyx.aas.adapter.json.AASToJsonEncoder, indent=2)
         return await self.client.patch(url, content=data, headers=self.headers)
 
-    async def update_submodel_property_in_basyx(self, submodel_repo_url: str, submodel_id: str,
-                                                property: model.Property) -> httpx.Response:
+    async def update_submodel_property_in_basyx(
+        self, submodel_repo_url: str, submodel_id: str, property: model.Property
+    ) -> httpx.Response:
         """
         Updates a Property of a Submodel via PATCH at the BaSyx endpoint.
 
@@ -217,8 +217,9 @@ class AsyncBaSyxClient:
         """
         return await self.update_submodelelement_in_basyx(submodel_repo_url, submodel_id, property)
 
-    async def add_submodel_reference_to_aas_in_basyx(self, aas_repo_url: str, aas_id: str,
-                                                     submodel: model.Submodel) -> httpx.Response:
+    async def add_submodel_reference_to_aas_in_basyx(
+        self, aas_repo_url: str, aas_id: str, submodel: model.Submodel
+    ) -> httpx.Response:
         """
         Posts a Submodel Reference to the BaSyx endpoint.
 

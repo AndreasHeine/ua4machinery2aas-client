@@ -1,6 +1,13 @@
 [flake8]
-# Ignoriere Zeilenlänge-Warnungen
-ignore = E501
+ignore = E501, W503, E203
+exclude =
+    env,
+    .venv,
+    venv,
+    __pycache__,
+    .git,
+    build,
+    dist
 
 # Oder alternativ: Maximale Zeilenlänge auf z.B. 120 Zeichen setzen
-# max-line-length = 120
+max-line-length = 120
