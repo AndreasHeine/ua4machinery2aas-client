@@ -1,0 +1,5 @@
+[MASTER]
+ignore=env,.venv,venv,__pycache__,build,dist
+
+[FORMAT]
+max-line-length=120
