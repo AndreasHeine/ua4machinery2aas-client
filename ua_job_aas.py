@@ -12,8 +12,6 @@ def clean_job_data(event_data: dict) -> dict:
 
 async def create_aas_for_job(data: dict) -> None:
     job_data = clean_job_data(data)
-    # for key, value in job_data.items():
-    #     print(f"{key}: {value}")
     aas_id = clean_id(job_data['JobOrder']['JobOrderID'])
     aas_short_id = f"AAS_JOB_{aas_id}"
     aas = model.AssetAdministrationShell(
@@ -27,7 +25,7 @@ async def create_aas_for_job(data: dict) -> None:
     submodels = []
     submodels.append(addJobOrderSubmodel(job_data, aas))
     submodels.append(addJobStateSubmodel(job_data, aas))
-    # submodels.append(addJobResponseSubmodel(job_data, aas)) # FIXME: Implement JobResponse Submodel after we have received an example of the JobOrderParameters structure, as this is currently not clear and we want to avoid making wrong assumptions here.
+    submodels.append(addJobResponseSubmodel(job_data, aas))
     # Register AAS and Submodel in BaSyx
     await register_in_basyx(aas, submodels)
 
@@ -35,8 +33,8 @@ async def create_aas_for_job(data: dict) -> None:
 def addJobOrderSubmodel(job_data: dict, aas: model.AssetAdministrationShell) -> model.Submodel:
     job_order: dict = job_data['JobOrder']
     job_order_id: str = clean_id(job_order['JobOrderID'])
-    description = job_order["Description"][0]["Text"] if "Description" in job_order and isinstance(job_order["Description"], list) and len(job_order["Description"]) > 0 and "Text" in job_order["Description"][0] else "---"
-    workmaster_id = job_order["WorkmasterId"][0]["ID"] if "WorkmasterId" in job_order and isinstance(job_order["WorkmasterId"], list) and len(job_order["WorkmasterId"]) > 0 and "ID" in job_order["WorkmasterId"][0] else "---"
+    description_entries = job_order.get("Description")
+    workmaster_entries = job_order.get("WorkmasterId") or job_order.get("WorkMasterID")
     submodel_id = f"JobOrder {job_order_id}"
     submodel = model.Submodel(
         id_=model.Identifier(submodel_id),
@@ -53,10 +51,46 @@ def addJobOrderSubmodel(job_data: dict, aas: model.AssetAdministrationShell) -> 
                     ),)
                 )
             ),
-            model.Property(
+            model.SubmodelElementList(
                 id_short='Description',
-                value_type=model.datatypes.String,
-                value=description,
+                type_value_list_element=model.SubmodelElementCollection,
+                value=[
+                    model.SubmodelElementCollection(
+                        id_short=None,
+                        value=[
+                            model.Property(
+                                id_short='Text',
+                                value_type=model.datatypes.String,
+                                value=str(entry["Text"]) if isinstance(entry, dict) and "Text" in entry and entry["Text"] is not None else "---",
+                                semantic_id=model.ExternalReference(
+                                    (model.Key(
+                                        type_=model.KeyTypes.GLOBAL_REFERENCE,
+                                        value='http://interop4X.deg/Properties/HasAttribute'
+                                    ),)
+                                )
+                            ),
+                            *([
+                                model.Property(
+                                    id_short='Locale',
+                                    value_type=model.datatypes.String,
+                                    value=str(entry["Locale"]),
+                                    semantic_id=model.ExternalReference(
+                                        (model.Key(
+                                            type_=model.KeyTypes.GLOBAL_REFERENCE,
+                                            value='http://interop4X.deg/Properties/HasAttribute'
+                                        ),)
+                                    )
+                                )
+                            ] if isinstance(entry, dict) and "Locale" in entry and entry["Locale"] is not None else [])
+                        ],
+                        semantic_id=model.ExternalReference(
+                            (model.Key(
+                                type_=model.KeyTypes.GLOBAL_REFERENCE,
+                                value='http://interop4X.deg/Properties/HasAttribute'
+                            ),)
+                        )
+                    ) for entry in (description_entries if isinstance(description_entries, list) else [])
+                ],
                 semantic_id=model.ExternalReference(
                     (model.Key(
                         type_=model.KeyTypes.GLOBAL_REFERENCE,
@@ -64,10 +98,46 @@ def addJobOrderSubmodel(job_data: dict, aas: model.AssetAdministrationShell) -> 
                     ),)
                 )
             ),
-            model.Property(
+            model.SubmodelElementList(
                 id_short='WorkmasterId',
-                value_type=model.datatypes.String,
-                value=workmaster_id,
+                type_value_list_element=model.SubmodelElementCollection,
+                value=[
+                    model.SubmodelElementCollection(
+                        id_short=None,
+                        value=[
+                            model.Property(
+                                id_short='ID',
+                                value_type=model.datatypes.String,
+                                value=str(entry["ID"]) if isinstance(entry, dict) and "ID" in entry and entry["ID"] is not None else "---",
+                                semantic_id=model.ExternalReference(
+                                    (model.Key(
+                                        type_=model.KeyTypes.GLOBAL_REFERENCE,
+                                        value='http://interop4X.deg/Properties/HasAttribute'
+                                    ),)
+                                )
+                            ),
+                            *([
+                                model.Property(
+                                    id_short='Description',
+                                    value_type=model.datatypes.String,
+                                    value=str(entry["Description"]),
+                                    semantic_id=model.ExternalReference(
+                                        (model.Key(
+                                            type_=model.KeyTypes.GLOBAL_REFERENCE,
+                                            value='http://interop4X.deg/Properties/HasAttribute'
+                                        ),)
+                                    )
+                                )
+                            ] if isinstance(entry, dict) and "Description" in entry and entry["Description"] is not None else [])
+                        ],
+                        semantic_id=model.ExternalReference(
+                            (model.Key(
+                                type_=model.KeyTypes.GLOBAL_REFERENCE,
+                                value='http://interop4X.deg/Properties/HasAttribute'
+                            ),)
+                        )
+                    ) for entry in (workmaster_entries if isinstance(workmaster_entries, list) else [])
+                ],
                 semantic_id=model.ExternalReference(
                     (model.Key(
                         type_=model.KeyTypes.GLOBAL_REFERENCE,
@@ -118,27 +188,51 @@ def addJobStateSubmodel(job_data: dict, aas: model.AssetAdministrationShell) -> 
     job_order: dict = job_data['JobOrder']
     job_order_id: str = clean_id(job_order['JobOrderID'])
     submodel_id = f"JobState {job_order_id}"
-    job_state = job_data["JobState"][0]["StateText"]["Text"] if "JobState" in job_data and isinstance(job_data["JobState"], list) and len(job_data["JobState"]) > 0 and "StateText" in job_data["JobState"][0] and "Text" in job_data["JobState"][0]["StateText"] else "---"
-    job_state_number = job_data["JobState"][0]["StateNumber"] if "JobState" in job_data and isinstance(job_data["JobState"], list) and len(job_data["JobState"]) > 0 and "StateNumber" in job_data["JobState"][0] else 0
+    job_state_entries = job_data.get("JobState")
+    if not isinstance(job_state_entries, list):
+        job_state_entries = []
     submodel = model.Submodel(
         id_=model.Identifier(submodel_id),
         id_short="JobState",
         submodel_element=[
-            model.Property(
-                id_short='StateText',
-                value_type=model.datatypes.String,
-                value=job_state,
-                semantic_id=model.ExternalReference(
-                    (model.Key(
-                        type_=model.KeyTypes.GLOBAL_REFERENCE,
-                        value='http://interop4X.deg/Properties/HasAttribute'
-                    ),)
-                )
-            ),
-            model.Property(
-                id_short='StateNumber',
-                value_type=model.datatypes.Integer,
-                value=job_state_number,
+            model.SubmodelElementList(
+                id_short='JobStateList',
+                type_value_list_element=model.SubmodelElementCollection,
+                value=[
+                    model.SubmodelElementCollection(
+                        id_short=None,
+                        value=[
+                            model.Property(
+                                id_short='StateText',
+                                value_type=model.datatypes.String,
+                                value=str(entry["StateText"]["Text"]) if isinstance(entry, dict) and isinstance(entry.get("StateText"), dict) and entry["StateText"].get("Text") is not None else "---",
+                                semantic_id=model.ExternalReference(
+                                    (model.Key(
+                                        type_=model.KeyTypes.GLOBAL_REFERENCE,
+                                        value='http://interop4X.deg/Properties/HasAttribute'
+                                    ),)
+                                )
+                            ),
+                            model.Property(
+                                id_short='StateNumber',
+                                value_type=model.datatypes.Integer,
+                                value=entry["StateNumber"] if isinstance(entry, dict) and "StateNumber" in entry and entry["StateNumber"] is not None else 0,
+                                semantic_id=model.ExternalReference(
+                                    (model.Key(
+                                        type_=model.KeyTypes.GLOBAL_REFERENCE,
+                                        value='http://interop4X.deg/Properties/HasAttribute'
+                                    ),)
+                                )
+                            )
+                        ],
+                        semantic_id=model.ExternalReference(
+                            (model.Key(
+                                type_=model.KeyTypes.GLOBAL_REFERENCE,
+                                value='http://interop4X.deg/Properties/HasAttribute'
+                            ),)
+                        )
+                    ) for entry in job_state_entries
+                ],
                 semantic_id=model.ExternalReference(
                     (model.Key(
                         type_=model.KeyTypes.GLOBAL_REFERENCE,
@@ -154,22 +248,80 @@ def addJobStateSubmodel(job_data: dict, aas: model.AssetAdministrationShell) -> 
 
 def addJobResponseSubmodel(job_data: dict, aas: model.AssetAdministrationShell) -> model.Submodel:
     job_order: dict = job_data['JobOrder']
-    job_order_parameters: dict = job_order.get('JobOrderParameters', {})
-    if job_order_parameters is None:
-        job_order_parameters = {}
+    job_response = job_data.get('JobResponse')
+    if not isinstance(job_response, dict):
+        job_response = {}
+
     job_order_id: str = clean_id(job_order['JobOrderID'])
+    job_response_id = str(job_response.get('JobResponseID', '---'))
+
+    description_data = job_response.get('Description')
+    description_text = "---"
+    description_locale = None
+    if isinstance(description_data, dict):
+        if description_data.get('Text') is not None:
+            description_text = str(description_data.get('Text'))
+        if description_data.get('Locale') is not None:
+            description_locale = str(description_data.get('Locale'))
+
+    response_job_state_entries = job_response.get('JobState')
+    if not isinstance(response_job_state_entries, list):
+        response_job_state_entries = []
+
+    job_response_data_entries = job_response.get('JobResponseData')
+    if not isinstance(job_response_data_entries, list):
+        job_response_data_entries = []
+
+    personnel_actuals_entries = job_response.get('PersonnelActuals')
+    if not isinstance(personnel_actuals_entries, list):
+        personnel_actuals_entries = []
+
+    equipment_actuals_entries = job_response.get('EquipmentActuals')
+    if not isinstance(equipment_actuals_entries, list):
+        equipment_actuals_entries = []
+
+    physical_asset_actuals_entries = job_response.get('PhysicalAssetActuals')
+    if not isinstance(physical_asset_actuals_entries, list):
+        physical_asset_actuals_entries = []
+
+    material_actuals_entries = job_response.get('MaterialActuals')
+    if not isinstance(material_actuals_entries, list):
+        material_actuals_entries = []
+
     submodel_id = f"JobResponse {job_order_id}"
     submodel = model.Submodel(
         id_=model.Identifier(submodel_id),
         id_short="JobResponse",
         submodel_element=[
+            model.Property(
+                id_short='JobResponseID',
+                value_type=model.datatypes.String,
+                value=job_response_id,
+                semantic_id=model.ExternalReference(
+                    (model.Key(
+                        type_=model.KeyTypes.GLOBAL_REFERENCE,
+                        value='http://interop4X.deg/Properties/HasAttribute'
+                    ),)
+                )
+            ),
+            model.Property(
+                id_short='JobOrderID',
+                value_type=model.datatypes.String,
+                value=str(job_response.get('JobOrderID', job_order.get('JobOrderID', '---'))),
+                semantic_id=model.ExternalReference(
+                    (model.Key(
+                        type_=model.KeyTypes.GLOBAL_REFERENCE,
+                        value='http://interop4X.deg/Properties/HasAttribute'
+                    ),)
+                )
+            ),
             model.SubmodelElementCollection(
-                id_short='JobOrderParameters',
+                id_short='Description',
                 value=[
                     model.Property(
-                        id_short='JobName',
+                        id_short='Text',
                         value_type=model.datatypes.String,
-                        value=job_order_parameters.get('JobName', ["---"])[0],
+                        value=description_text,
                         semantic_id=model.ExternalReference(
                             (model.Key(
                                 type_=model.KeyTypes.GLOBAL_REFERENCE,
@@ -177,19 +329,204 @@ def addJobResponseSubmodel(job_data: dict, aas: model.AssetAdministrationShell) 
                             ),)
                         )
                     ),
-                    model.Property(
-                        id_short='OrderNumbers',
-                        value_type=model.datatypes.Integer,
-                        value=job_order_parameters.get('OrderNumbers', [0])[0],
+                    *([
+                        model.Property(
+                            id_short='Locale',
+                            value_type=model.datatypes.String,
+                            value=description_locale,
+                            semantic_id=model.ExternalReference(
+                                (model.Key(
+                                    type_=model.KeyTypes.GLOBAL_REFERENCE,
+                                    value='http://interop4X.deg/Properties/HasAttribute'
+                                ),)
+                            )
+                        )
+                    ] if description_locale is not None else [])
+                ],
+                semantic_id=model.ExternalReference(
+                    (model.Key(
+                        type_=model.KeyTypes.GLOBAL_REFERENCE,
+                        value='http://interop4X.deg/Properties/HasAttribute'
+                    ),)
+                )
+            ),
+            model.Property(
+                id_short='StartTime',
+                value_type=model.datatypes.String,
+                value=str(job_response.get('StartTime', '---')),
+                semantic_id=model.ExternalReference(
+                    (model.Key(
+                        type_=model.KeyTypes.GLOBAL_REFERENCE,
+                        value='http://interop4X.deg/Properties/HasAttribute'
+                    ),)
+                )
+            ),
+            model.Property(
+                id_short='EndTime',
+                value_type=model.datatypes.String,
+                value=str(job_response.get('EndTime', '---')),
+                semantic_id=model.ExternalReference(
+                    (model.Key(
+                        type_=model.KeyTypes.GLOBAL_REFERENCE,
+                        value='http://interop4X.deg/Properties/HasAttribute'
+                    ),)
+                )
+            ),
+            model.SubmodelElementList(
+                id_short='JobStateList',
+                type_value_list_element=model.SubmodelElementCollection,
+                value=[
+                    model.SubmodelElementCollection(
+                        id_short=None,
+                        value=[
+                            model.Property(
+                                id_short='StateText',
+                                value_type=model.datatypes.String,
+                                value=str(entry['StateText']['Text']) if isinstance(entry, dict) and isinstance(entry.get('StateText'), dict) and entry['StateText'].get('Text') is not None else '---',
+                                semantic_id=model.ExternalReference(
+                                    (model.Key(
+                                        type_=model.KeyTypes.GLOBAL_REFERENCE,
+                                        value='http://interop4X.deg/Properties/HasAttribute'
+                                    ),)
+                                )
+                            ),
+                            model.Property(
+                                id_short='StateNumber',
+                                value_type=model.datatypes.Integer,
+                                value=entry['StateNumber'] if isinstance(entry, dict) and entry.get('StateNumber') is not None else 0,
+                                semantic_id=model.ExternalReference(
+                                    (model.Key(
+                                        type_=model.KeyTypes.GLOBAL_REFERENCE,
+                                        value='http://interop4X.deg/Properties/HasAttribute'
+                                    ),)
+                                )
+                            )
+                        ],
                         semantic_id=model.ExternalReference(
                             (model.Key(
                                 type_=model.KeyTypes.GLOBAL_REFERENCE,
                                 value='http://interop4X.deg/Properties/HasAttribute'
                             ),)
                         )
-                    )
-                ]
-            )
+                    ) for entry in response_job_state_entries
+                ],
+                semantic_id=model.ExternalReference(
+                    (model.Key(
+                        type_=model.KeyTypes.GLOBAL_REFERENCE,
+                        value='http://interop4X.deg/Properties/HasAttribute'
+                    ),)
+                )
+            ),
+            model.SubmodelElementList(
+                id_short='JobResponseData',
+                type_value_list_element=model.SubmodelElementCollection,
+                value=[
+                    model.SubmodelElementCollection(
+                        id_short=None,
+                        value=[],
+                        semantic_id=model.ExternalReference(
+                            (model.Key(
+                                type_=model.KeyTypes.GLOBAL_REFERENCE,
+                                value='http://interop4X.deg/Properties/HasAttribute'
+                            ),)
+                        )
+                    ) for entry in job_response_data_entries if isinstance(entry, dict)
+                ],
+                semantic_id=model.ExternalReference(
+                    (model.Key(
+                        type_=model.KeyTypes.GLOBAL_REFERENCE,
+                        value='http://interop4X.deg/Properties/HasAttribute'
+                    ),)
+                )
+            ),
+            model.SubmodelElementList(
+                id_short='PersonnelActuals',
+                type_value_list_element=model.SubmodelElementCollection,
+                value=[
+                    model.SubmodelElementCollection(
+                        id_short=None,
+                        value=[],
+                        semantic_id=model.ExternalReference(
+                            (model.Key(
+                                type_=model.KeyTypes.GLOBAL_REFERENCE,
+                                value='http://interop4X.deg/Properties/HasAttribute'
+                            ),)
+                        )
+                    ) for entry in personnel_actuals_entries if isinstance(entry, dict)
+                ],
+                semantic_id=model.ExternalReference(
+                    (model.Key(
+                        type_=model.KeyTypes.GLOBAL_REFERENCE,
+                        value='http://interop4X.deg/Properties/HasAttribute'
+                    ),)
+                )
+            ),
+            model.SubmodelElementList(
+                id_short='EquipmentActuals',
+                type_value_list_element=model.SubmodelElementCollection,
+                value=[
+                    model.SubmodelElementCollection(
+                        id_short=None,
+                        value=[],
+                        semantic_id=model.ExternalReference(
+                            (model.Key(
+                                type_=model.KeyTypes.GLOBAL_REFERENCE,
+                                value='http://interop4X.deg/Properties/HasAttribute'
+                            ),)
+                        )
+                    ) for entry in equipment_actuals_entries if isinstance(entry, dict)
+                ],
+                semantic_id=model.ExternalReference(
+                    (model.Key(
+                        type_=model.KeyTypes.GLOBAL_REFERENCE,
+                        value='http://interop4X.deg/Properties/HasAttribute'
+                    ),)
+                )
+            ),
+            model.SubmodelElementList(
+                id_short='PhysicalAssetActuals',
+                type_value_list_element=model.SubmodelElementCollection,
+                value=[
+                    model.SubmodelElementCollection(
+                        id_short=None,
+                        value=[],
+                        semantic_id=model.ExternalReference(
+                            (model.Key(
+                                type_=model.KeyTypes.GLOBAL_REFERENCE,
+                                value='http://interop4X.deg/Properties/HasAttribute'
+                            ),)
+                        )
+                    ) for entry in physical_asset_actuals_entries if isinstance(entry, dict)
+                ],
+                semantic_id=model.ExternalReference(
+                    (model.Key(
+                        type_=model.KeyTypes.GLOBAL_REFERENCE,
+                        value='http://interop4X.deg/Properties/HasAttribute'
+                    ),)
+                )
+            ),
+            model.SubmodelElementList(
+                id_short='MaterialActuals',
+                type_value_list_element=model.SubmodelElementCollection,
+                value=[
+                    model.SubmodelElementCollection(
+                        id_short=None,
+                        value=[],
+                        semantic_id=model.ExternalReference(
+                            (model.Key(
+                                type_=model.KeyTypes.GLOBAL_REFERENCE,
+                                value='http://interop4X.deg/Properties/HasAttribute'
+                            ),)
+                        )
+                    ) for entry in material_actuals_entries if isinstance(entry, dict)
+                ],
+                semantic_id=model.ExternalReference(
+                    (model.Key(
+                        type_=model.KeyTypes.GLOBAL_REFERENCE,
+                        value='http://interop4X.deg/Properties/HasAttribute'
+                    ),)
+                )
+            ),
         ]
     )
     aas.submodel.add(model.ModelReference.from_referable(submodel))
