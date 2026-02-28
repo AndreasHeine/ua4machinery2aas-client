@@ -1,4 +1,3 @@
-from asyncua import ua
 from basyx.aas import model
 from basyx_utils.register import register_in_basyx
 from common.helper import clean_id
