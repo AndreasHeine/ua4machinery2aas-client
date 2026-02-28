@@ -130,6 +130,24 @@ All parameters in `config.py` can be overridden via environment variables.
 - **No OPC UA events:** Verify `UA_MACHINE_INSTANCE_NODEID` and the namespace/model of the target server.
 - **Timeouts:** Increase `UA_REQUEST_TIMEOUT` and check server connectivity.
 
+## Local CI check before commit
+
+Use this script to run local equivalents of all GitHub workflows (`pylint`, `pytest`, `container build`) before committing:
+
+```bash
+python scripts/run_local_workflows.py
+```
+
+Optional skips:
+
+```bash
+python scripts/run_local_workflows.py --skip-container
+python scripts/run_local_workflows.py --skip-pylint
+python scripts/run_local_workflows.py --skip-pytest
+```
+
+The script returns exit code `0` only if all selected checks pass.
+
 ## Logs
 
 ```

@@ -1,5 +1,7 @@
 """Edge-case and recursion tests for ISA95 mapping helpers in ua_job_aas."""
 
+# pylint: disable=protected-access
+
 from basyx.aas import model
 
 import ua_job_aas
@@ -18,6 +20,7 @@ def _collection_property_value(collection: model.SubmodelElementCollection, prop
 
 
 def test_parameter_value_type_mapping_bool_int_float_string() -> None:
+    """Maps Python scalar types to the expected ISA95 Property value types."""
     bool_coll = ua_job_aas._create_isa95_parameter_collection({"ID": "B", "Value": True}, None)
     int_coll = ua_job_aas._create_isa95_parameter_collection({"ID": "I", "Value": 42}, None)
     float_coll = ua_job_aas._create_isa95_parameter_collection({"ID": "F", "Value": 12.5}, None)
@@ -35,6 +38,7 @@ def test_parameter_value_type_mapping_bool_int_float_string() -> None:
 
 
 def test_parameter_subparameters_recursion_depth_two() -> None:
+    """Creates nested Subparameters collections recursively to depth two."""
     parameter = {
         "ID": "root",
         "Value": 1,
@@ -63,6 +67,7 @@ def test_parameter_subparameters_recursion_depth_two() -> None:
 
 
 def test_property_subproperties_recursion() -> None:
+    """Creates nested Subproperties collections recursively."""
     property_data = {
         "ID": "p_root",
         "Value": "v0",
@@ -89,6 +94,7 @@ def test_property_subproperties_recursion() -> None:
 
 
 def test_material_collection_with_minimal_identifiers_and_properties() -> None:
+    """Builds minimal material collection with class id and property list."""
     material = {
         "MaterialClassID": "class-1",
         "Properties": [
@@ -104,6 +110,7 @@ def test_material_collection_with_minimal_identifiers_and_properties() -> None:
 
 
 def test_job_response_defaults_when_optional_sections_missing() -> None:
+    """Keeps optional JobResponse sections present even when payload omits them."""
     aas = model.AssetAdministrationShell(
         id_=model.Identifier("AAS_Test"),
         id_short="AAS_Test",

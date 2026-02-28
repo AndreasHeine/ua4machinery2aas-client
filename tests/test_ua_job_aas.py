@@ -31,6 +31,7 @@ def _collection_property_value(collection: model.SubmodelElementCollection, prop
 
 
 def test_add_job_order_submodel_maps_workmaster_and_parameters() -> None:
+    """Maps JobOrder fields, WorkMasterID list and parameter/material sections."""
     aas = _new_aas("JobOrderAAS")
     job_data = {
         "JobOrder": {
@@ -74,6 +75,7 @@ def test_add_job_order_submodel_maps_workmaster_and_parameters() -> None:
 
 
 def test_add_job_state_submodel_creates_grouped_job_state_list() -> None:
+    """Creates grouped JobState entries with state text and number."""
     aas = _new_aas("JobStateAAS")
     job_data = {
         "JobOrder": {"JobOrderID": "job-002"},
@@ -93,6 +95,7 @@ def test_add_job_state_submodel_creates_grouped_job_state_list() -> None:
 
 
 def test_add_job_response_submodel_maps_actuals_and_parameters() -> None:
+    """Maps JobResponseData and all *_Actuals lists into the response submodel."""
     aas = _new_aas("JobResponseAAS")
     job_data = {
         "JobOrder": {"JobOrderID": "job-003"},
@@ -123,6 +126,7 @@ def test_add_job_response_submodel_maps_actuals_and_parameters() -> None:
 
 
 def test_create_aas_for_job_calls_register_with_three_submodels(monkeypatch) -> None:
+    """Builds and registers exactly JobOrder, JobState and JobResponse submodels."""
     captured = {}
 
     async def _fake_register(aas, submodels):
