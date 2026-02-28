@@ -58,7 +58,8 @@ class SubscriptionHandler:
         """
         Callback for asyncua Subscription.
         This method will be called when the Client received a data change message from the Server.
-        We use this to detect if the subscription is still alive, as some OPC UA Servers may silently drop subscriptions after some time.
+        We use this to detect if the subscription is still alive, as some OPC UA
+        Servers may silently drop subscriptions after some time.
         """
         # print(f"DataChange Notification - Node: {node}, Value: {val}, Data: {data}")
 
@@ -72,6 +73,7 @@ class SubscriptionHandler:
 
 
 async def process_event(eventtype_nodeid: str | None = None, eventtype_displayname: str | None = None):
+    """Process one queued OPC UA event and forward matching JobOrder events to AAS creation."""
     event = await EVENT_QUEUE.get()
     if event is None:
         return
@@ -81,12 +83,13 @@ async def process_event(eventtype_nodeid: str | None = None, eventtype_displayna
         print(f"Received new Event of type: {eventtype_displayname} [{event.EventType.to_string()}] processing...")
         await create_aas_for_job(event.get_event_props_as_fields_dict())
         return
-    else:
-        print(f"Received other event type, ignoring... EventType: {event.EventType.to_string()}")
-        return
+
+    print(f"Received other event type, ignoring... EventType: {event.EventType.to_string()}")
+    return
 
 
 async def main():
+    """Connect to OPC UA, subscribe to events, and continuously process event queue entries."""
     client = Client(url=UA_ENDPOINT_URL, timeout=UA_REQUEST_TIMEOUT)
     await client.connect()
     print(f"Connected to OPC UA Server at {UA_ENDPOINT_URL}")
@@ -140,10 +143,10 @@ async def main():
         return
 
     ref_des = references[0]
-    EVENT_TYPE_NODEID = ref_des.NodeId.to_string()
-    found_eventtype_node = client.get_node(EVENT_TYPE_NODEID)
-    EVENT_TYPE_DISPLAYNAME: ua.LocalizedText = await found_eventtype_node.read_display_name()
-    print(f"Using EventType-NodeId's: {EVENT_TYPE_DISPLAYNAME.Text} [{EVENT_TYPE_NODEID}] for subscription")
+    event_type_nodeid = ref_des.NodeId.to_string()
+    found_eventtype_node = client.get_node(event_type_nodeid)
+    event_type_displayname: ua.LocalizedText = await found_eventtype_node.read_display_name()
+    print(f"Using EventType-NodeId's: {event_type_displayname.Text} [{event_type_nodeid}] for subscription")
 
     handler = SubscriptionHandler()
     subscription = await client.create_subscription(period=UA_PUBLISHING_INTERVAL, handler=handler, publishing=True)
@@ -161,7 +164,7 @@ async def main():
         # Polling keeps the loop simple and aligns processing cadence with the
         # configured publishing interval.
         if EVENT_QUEUE.qsize() > 0:
-            await process_event(EVENT_TYPE_NODEID, EVENT_TYPE_DISPLAYNAME.Text)
+            await process_event(event_type_nodeid, event_type_displayname.Text)
         else:
             await asyncio.sleep(UA_PUBLISHING_INTERVAL / 1000)  # Sleep for the publishing interval
 

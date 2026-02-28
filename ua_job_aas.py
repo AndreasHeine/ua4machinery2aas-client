@@ -1,9 +1,12 @@
+"""Transformation of OPC UA job event payloads into BaSyx AAS/Submodel structures."""
+
 from basyx.aas import model
 from basyx_utils.register import register_in_basyx
 from common.helper import clean_id, variant_to_json_serializable
 
 
 def clean_job_data(event_data: dict) -> dict:
+    """Normalize OPC UA event values into JSON-serializable Python objects."""
     cleaned_data = {}
     for key, value in event_data.items():
         cleaned_data[key] = variant_to_json_serializable(value)
@@ -914,6 +917,7 @@ def _create_isa95_equipment_collection(equipment_data: dict, id_short=None) -> m
 
 
 async def create_aas_for_job(data: dict) -> None:
+    """Create and register all job-related submodels (order, state, response)."""
     job_data = clean_job_data(data)
     aas_id = clean_id(job_data["JobOrder"]["JobOrderID"])
     aas_short_id = f"AAS_JOB_{aas_id}"
@@ -925,14 +929,15 @@ async def create_aas_for_job(data: dict) -> None:
         ),
     )
     submodels = []
-    submodels.append(addJobOrderSubmodel(job_data, aas))
-    submodels.append(addJobStateSubmodel(job_data, aas))
-    submodels.append(addJobResponseSubmodel(job_data, aas))
+    submodels.append(add_job_order_submodel(job_data, aas))
+    submodels.append(add_job_state_submodel(job_data, aas))
+    submodels.append(add_job_response_submodel(job_data, aas))
     # Register AAS and Submodel in BaSyx
     await register_in_basyx(aas, submodels)
 
 
-def addJobOrderSubmodel(job_data: dict, aas: model.AssetAdministrationShell) -> model.Submodel:
+def add_job_order_submodel(job_data: dict, aas: model.AssetAdministrationShell) -> model.Submodel:
+    """Create the JobOrder submodel from ISA95 job-order payload data."""
     job_order: dict = job_data["JobOrder"]
     job_order_id: str = clean_id(job_order["JobOrderID"])
     description_entries = job_order.get("Description")
@@ -1227,7 +1232,8 @@ def addJobOrderSubmodel(job_data: dict, aas: model.AssetAdministrationShell) -> 
     return submodel
 
 
-def addJobStateSubmodel(job_data: dict, aas: model.AssetAdministrationShell) -> model.Submodel:
+def add_job_state_submodel(job_data: dict, aas: model.AssetAdministrationShell) -> model.Submodel:
+    """Create the JobState submodel from ISA95 job-state payload data."""
     job_order: dict = job_data["JobOrder"]
     job_order_id: str = clean_id(job_order["JobOrderID"])
     submodel_id = f"JobState {job_order_id}"
@@ -1309,7 +1315,8 @@ def addJobStateSubmodel(job_data: dict, aas: model.AssetAdministrationShell) -> 
     return submodel
 
 
-def addJobResponseSubmodel(job_data: dict, aas: model.AssetAdministrationShell) -> model.Submodel:
+def add_job_response_submodel(job_data: dict, aas: model.AssetAdministrationShell) -> model.Submodel:
+    """Create the JobResponse submodel from ISA95 job-response payload data."""
     job_order: dict = job_data["JobOrder"]
     job_response = job_data.get("JobResponse")
     if not isinstance(job_response, dict):

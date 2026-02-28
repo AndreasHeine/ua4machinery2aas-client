@@ -1,3 +1,5 @@
+"""Common helper functions for ID normalization and OPC UA value serialization."""
+
 import base64
 import re
 import uuid
@@ -131,13 +133,15 @@ def make_nodeid_string_from_expanded_nodeid(enid: ua.ExpandedNodeId) -> str:
 
 def make_nodeid_string(enid_string: str, namespace_array: list[str]) -> str:
     """
-    Combines make_expanded_nodeid_from_string and make_nodeid_string_from_expanded_nodeid to convert an ExpandedNodeId string into a NodeId string.
+    Convert an ExpandedNodeId string into a plain NodeId string by parsing and
+    normalizing namespace/index information.
     """
     enid = make_expanded_nodeid_from_string(enid_string, namespace_array)
     return make_nodeid_string_from_expanded_nodeid(enid)
 
 
 def variant_to_json_serializable(variant: Any) -> Any:
+    """Recursively convert OPC UA variant payloads into JSON-serializable values."""
     def _serialize(value: Any, seen: set[int]) -> Any:
         if value is None:
             return None

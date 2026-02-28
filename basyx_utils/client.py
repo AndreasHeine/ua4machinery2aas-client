@@ -2,11 +2,13 @@
 Async BaSyx Client using httpx for async HTTP requests.
 """
 
-from basyx.aas import model
-import basyx.aas.adapter.json
-import httpx
 import json
 from typing import Optional
+
+import basyx.aas.adapter.json
+import httpx
+from basyx.aas import model
+
 from common.helper import utf8_base64_url_encode
 
 
@@ -177,8 +179,10 @@ class AsyncBaSyxClient:
         Updates a Submodel Element via PATCH at the BaSyx endpoint.
 
         Args:
-            submodel_repo_url (str): The URL of the Submodel repository endpoint e.g. http://localhost:8081/submodels
-            submodel_id (str): The ID of the Submodel containing the element to update e.g. "Machinery Job Response asdf"
+            submodel_repo_url (str): The URL of the Submodel repository endpoint,
+                e.g. http://localhost:8081/submodels
+            submodel_id (str): The ID of the Submodel containing the element to update,
+                e.g. "Machinery Job Response asdf"
             submodel_element (basyx.aas.model.SubmodelElement): The Submodel Element to be updated
 
         Returns:
@@ -196,26 +200,32 @@ class AsyncBaSyxClient:
         else:
             raise TypeError("Unknown SubmodelElement type!")
 
-        # Example: "http://localhost:8081/submodels/TWFjaGluZXJ5IEpvYiBSZXNwb25zZSBhc2Rm/submodel-elements/timestamp/$value"
-        url = f"{submodel_repo_url}/{utf8_base64_url_encode(submodel_id)}/submodel-elements/{submodel_element.id_short}/$value"
+        # Example:
+        # "http://localhost:8081/submodels/TWFjaGluZXJ5IEpvYiBSZXNwb25zZSBhc2Rm/submodel-elements/timestamp/$value"
+        url = (
+            f"{submodel_repo_url}/{utf8_base64_url_encode(submodel_id)}"
+            f"/submodel-elements/{submodel_element.id_short}/$value"
+        )
         data = json.dumps(body, cls=basyx.aas.adapter.json.AASToJsonEncoder, indent=2)
         return await self.client.patch(url, content=data, headers=self.headers)
 
     async def update_submodel_property_in_basyx(
-        self, submodel_repo_url: str, submodel_id: str, property: model.Property
+        self, submodel_repo_url: str, submodel_id: str, property_element: model.Property
     ) -> httpx.Response:
         """
         Updates a Property of a Submodel via PATCH at the BaSyx endpoint.
 
         Args:
-            submodel_repo_url (str): The URL of the Submodel repository endpoint e.g. http://localhost:8081/submodels
-            submodel_id (str): The ID of the Submodel containing the Property to update e.g. "Machinery Job Response asdf"
-            property (basyx.aas.model.Property): The Property to be updated
+            submodel_repo_url (str): The URL of the Submodel repository endpoint,
+                e.g. http://localhost:8081/submodels
+            submodel_id (str): The ID of the Submodel containing the Property to update,
+                e.g. "Machinery Job Response asdf"
+            property_element (basyx.aas.model.Property): The Property to be updated
 
         Returns:
             httpx.Response: The HTTP response from the server
         """
-        return await self.update_submodelelement_in_basyx(submodel_repo_url, submodel_id, property)
+        return await self.update_submodelelement_in_basyx(submodel_repo_url, submodel_id, property_element)
 
     async def add_submodel_reference_to_aas_in_basyx(
         self, aas_repo_url: str, aas_id: str, submodel: model.Submodel

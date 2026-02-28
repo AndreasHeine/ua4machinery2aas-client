@@ -1,3 +1,5 @@
+"""Basic smoke test for AAS creation helper entrypoints."""
+
 import asyncio
 from datetime import datetime
 from common.helper import clean_id
@@ -6,6 +8,7 @@ from ua_machine_aas import create_aas_for_identification
 
 
 async def main():
+    """Execute sample test payloads against AAS creation functions."""
     await create_aas_for_job(
         {
             "JobOrder": {

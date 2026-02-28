@@ -1,3 +1,5 @@
+"""Helper functions and status-code mappings for async BaSyx registration calls."""
+
 import httpx
 from basyx.aas import model
 from basyx_utils.client import AsyncBaSyxClient
@@ -11,7 +13,10 @@ AAS_HTTP_STATUS_CODES = {
     401: "Unauthorized",
     403: "Forbidden",
     404: "Not Found",
-    409: "Conflict, a resource which shall be created exists already. Might be thrown if a Submodel or SubmodelElement with the same ShortId is contained in a POST request",
+    409: (
+        "Conflict, a resource which shall be created exists already. "
+        "Might be thrown if a Submodel or SubmodelElement with the same ShortId is contained in a POST request"
+    ),
     500: "Internal Server Error",
 }
 
@@ -23,7 +28,10 @@ SM_HTTP_STATUS_CODES = {
     401: "Unauthorized",
     403: "Forbidden",
     404: "Not Found",
-    409: "Conflict, a resource which shall be created exists already. Might be thrown if a Submodel or SubmodelElement with the same ShortId is contained in a POST request",
+    409: (
+        "Conflict, a resource which shall be created exists already. "
+        "Might be thrown if a Submodel or SubmodelElement with the same ShortId is contained in a POST request"
+    ),
     500: "Internal Server Error",
 }
 
