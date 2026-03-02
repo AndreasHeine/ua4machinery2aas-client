@@ -2,7 +2,7 @@
 
 from basyx.aas import model
 from basyx_utils.register import register_in_basyx
-from common.helper import clean_id, variant_to_json_serializable
+from common.helper import variant_to_json_serializable
 
 
 def clean_job_data(event_data: dict) -> dict:
@@ -919,11 +919,8 @@ def _create_isa95_equipment_collection(equipment_data: dict, id_short=None) -> m
 async def create_aas_for_job(data: dict) -> None:
     """Create and register all job-related submodels (order, state, response)."""
     job_data = clean_job_data(data)
-    original_job_order_id = job_data["JobOrder"]["JobOrderID"]
-    # Use original value for globally unique id (preserves special chars)
-    aas_id = original_job_order_id
-    # Use cleaned value for human-readable idShort (alphanumeric only)
-    aas_short_id = f"AAS_JOB_{clean_id(original_job_order_id)}"
+    aas_id = job_data["JobOrder"]["JobOrderID"]
+    aas_short_id = "AAS_JOBORDER"
     aas = model.AssetAdministrationShell(
         id_=model.Identifier(aas_id),
         id_short=aas_short_id,
@@ -942,7 +939,7 @@ async def create_aas_for_job(data: dict) -> None:
 def add_job_order_submodel(job_data: dict, aas: model.AssetAdministrationShell) -> model.Submodel:
     """Create the JobOrder submodel from ISA95 job-order payload data."""
     job_order: dict = job_data["JobOrder"]
-    job_order_id: str = clean_id(job_order["JobOrderID"])
+    job_order_id: str = job_order["JobOrderID"]
     description_entries = job_order.get("Description")
     workmaster_entries = job_order.get("WorkmasterId") or job_order.get("WorkMasterID")
     if not isinstance(workmaster_entries, list):
@@ -1238,7 +1235,7 @@ def add_job_order_submodel(job_data: dict, aas: model.AssetAdministrationShell) 
 def add_job_state_submodel(job_data: dict, aas: model.AssetAdministrationShell) -> model.Submodel:
     """Create the JobState submodel from ISA95 job-state payload data."""
     job_order: dict = job_data["JobOrder"]
-    job_order_id: str = clean_id(job_order["JobOrderID"])
+    job_order_id: str = job_order["JobOrderID"]
     submodel_id = f"JobState {job_order_id}"
     job_state_entries = job_data.get("JobState")
     if not isinstance(job_state_entries, list):
@@ -1325,7 +1322,7 @@ def add_job_response_submodel(job_data: dict, aas: model.AssetAdministrationShel
     if not isinstance(job_response, dict):
         job_response = {}
 
-    job_order_id: str = clean_id(job_order["JobOrderID"])
+    job_order_id: str = job_order["JobOrderID"]
     job_response_id = str(job_response.get("JobResponseID", "---"))
 
     description_data = job_response.get("Description")
