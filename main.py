@@ -28,14 +28,15 @@ Configuration:
     and can be overridden through environment variables.
 """
 
+import sys
 import asyncio
 from asyncua import Client, Node, ua
 from asyncua.common.events import Event
 from common.helper import make_nodeid_string, variant_to_json_serializable
 from ua_job_aas import create_aas_for_job
+from ua_machine_aas import create_aas_for_identification
 
 from config import UA_ENDPOINT_URL, UA_REQUEST_TIMEOUT, UA_MACHINE_INSTANCE_NODEID, UA_PUBLISHING_INTERVAL
-from ua_machine_aas import create_aas_for_identification
 
 EVENT_QUEUE: asyncio.Queue[Event] = asyncio.Queue(100)
 EVENT_TYPE_NODEID: str | None = None
@@ -88,9 +89,15 @@ async def process_event(eventtype_nodeid: str | None = None, eventtype_displayna
     return
 
 
+def exit():
+    sys.exit(1)
+
+
 async def main():
     """Connect to OPC UA, subscribe to events, and continuously process event queue entries."""
     client = Client(url=UA_ENDPOINT_URL, timeout=UA_REQUEST_TIMEOUT)
+    client.application_uri = "urn:ua4machinery2aas-client"
+    client.connection_lost_callback = exit
     await client.connect()
     print(f"Connected to OPC UA Server at {UA_ENDPOINT_URL}")
 
