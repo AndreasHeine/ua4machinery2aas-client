@@ -39,7 +39,8 @@ def clean_id(value: str) -> str:
         raise ValueError("Invalid id_short: no valid characters remain after cleaning.")
 
     if not cleaned_id[0].isalpha():
-        raise ValueError("Invalid id_short: cleaned value must start with a letter (Constraint AASd-002).")
+        cleaned_id = "ID_" + cleaned_id
+        print(f"Warning: id_short must start with a letter. Prepending 'ID_' to '{value}' -> '{cleaned_id}'")
 
     return cleaned_id
 
