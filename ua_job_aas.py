@@ -919,8 +919,11 @@ def _create_isa95_equipment_collection(equipment_data: dict, id_short=None) -> m
 async def create_aas_for_job(data: dict) -> None:
     """Create and register all job-related submodels (order, state, response)."""
     job_data = clean_job_data(data)
-    aas_id = clean_id(job_data["JobOrder"]["JobOrderID"])
-    aas_short_id = f"AAS_JOB_{aas_id}"
+    original_job_order_id = job_data["JobOrder"]["JobOrderID"]
+    # Use original value for globally unique id (preserves special chars)
+    aas_id = original_job_order_id
+    # Use cleaned value for human-readable idShort (alphanumeric only)
+    aas_short_id = f"AAS_JOB_{clean_id(original_job_order_id)}"
     aas = model.AssetAdministrationShell(
         id_=model.Identifier(aas_id),
         id_short=aas_short_id,

@@ -7,8 +7,10 @@ from common.helper import clean_id
 
 async def create_aas_for_identification(identifier: str, identification: dict) -> None:
     """Create an AAS for machine identification and register it in BaSyx."""
-    aas_id = clean_id(identifier)
-    aas_short_id = f"AAS_Machine_{aas_id}"
+    # Use original value for globally unique id (preserves special chars)
+    aas_id = identifier
+    # Use cleaned value for human-readable idShort (alphanumeric only)
+    aas_short_id = f"AAS_Machine_{clean_id(identifier)}"
     aas = model.AssetAdministrationShell(
         id_=model.Identifier(aas_id),
         id_short=aas_short_id,
