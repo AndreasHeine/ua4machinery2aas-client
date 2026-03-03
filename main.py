@@ -97,6 +97,7 @@ async def main():  # pylint: disable=too-many-statements
     client.reconnect_initial_delay = 1.0
     client.reconnect_max_delay = 30.0
     client.reconnect_request_timeout = 20.0
+    client.auto_recreate_invalid_subscriptions = True
     await client.connect()
     print(f"Connected to OPC UA Server at {UA_ENDPOINT_URL}")
 
