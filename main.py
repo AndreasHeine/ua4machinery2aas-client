@@ -89,16 +89,10 @@ async def process_event(eventtype_nodeid: str | None = None, eventtype_displayna
     return
 
 
-def exit_main(ex):  # pylint: disable=unused-argument
-    """Callback for asyncua Client connection loss. """
-    # sys.exit(1)
-
-
 async def main():  # pylint: disable=too-many-statements
     """Connect to OPC UA, subscribe to events, and continuously process event queue entries."""
     client = Client(url=UA_ENDPOINT_URL, timeout=UA_REQUEST_TIMEOUT)
     client.application_uri = "urn:ua4machinery2aas-client"
-    client.connection_lost_callback = exit_main
     client.reconnect_enabled = True
     client.reconnect_initial_delay = 1.0
     client.reconnect_max_delay = 30.0
