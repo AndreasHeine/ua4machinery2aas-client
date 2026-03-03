@@ -62,7 +62,12 @@ def add_identification_submodel(identification: dict, aas: model.AssetAdministra
         elements.append(_create_identification_property("Model", _extract_localized_text(identification["Model"])))
 
     if "ComponentName" in identification:
-        elements.append(_create_identification_property("ComponentName", _extract_localized_text(identification["ComponentName"])))
+        elements.append(
+            _create_identification_property(
+                "ComponentName", 
+                _extract_localized_text(identification["ComponentName"])
+            )
+        )
 
     # Optional String properties
     optional_string_props = [
