@@ -62,7 +62,7 @@ class SubscriptionHandler:
         We use this to detect if the subscription is still alive, as some OPC UA
         Servers may silently drop subscriptions after some time.
         """
-        # print(f"DataChange Notification - Node: {node}, Value: {val}, Data: {data}")
+        print(f"DataChange Notification - Node: {node}, Value: {val}, Data: {data}")
 
     async def status_change_notification(self, status):
         """
@@ -89,9 +89,9 @@ async def process_event(eventtype_nodeid: str | None = None, eventtype_displayna
     return
 
 
-def exit_main(args, kwargs):  # pylint: disable=unused-argument
+def exit_main(ex):  # pylint: disable=unused-argument
     """Callback for asyncua Client connection loss. """
-    sys.exit(1)
+    # sys.exit(1)
 
 
 async def main():  # pylint: disable=too-many-statements
@@ -99,6 +99,10 @@ async def main():  # pylint: disable=too-many-statements
     client = Client(url=UA_ENDPOINT_URL, timeout=UA_REQUEST_TIMEOUT)
     client.application_uri = "urn:ua4machinery2aas-client"
     client.connection_lost_callback = exit_main
+    client.reconnect_enabled = True
+    client.reconnect_initial_delay = 1.0
+    client.reconnect_max_delay = 30.0
+    client.reconnect_request_timeout = 20.0
     await client.connect()
     print(f"Connected to OPC UA Server at {UA_ENDPOINT_URL}")
 
@@ -175,6 +179,12 @@ async def main():  # pylint: disable=too-many-statements
             await process_event(event_type_nodeid, event_type_displayname.Text)
         else:
             await asyncio.sleep(UA_PUBLISHING_INTERVAL / 1000)  # Sleep for the publishing interval
+            try:
+                await client.get_namespace_array()
+                print(f"Polling... Namespace Array")
+            except Exception as ex:
+                print(f"Error while polling OPC UA Server: {ex}")
+                continue
 
 
 if __name__ == "__main__":

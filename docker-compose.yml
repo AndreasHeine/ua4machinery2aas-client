@@ -1,10 +1,10 @@
 services:
   ua4machinery2aas-client:
     container_name: ua4machinery2aas-client
-    image: ghcr.io/andreasheine/ua4machinery2aas-client:main
-    # build:
-    #   context: .
-    #   dockerfile: Dockerfile
+    # image: ghcr.io/andreasheine/ua4machinery2aas-client:main
+    build:
+      context: .
+      dockerfile: Dockerfile
     environment:
       AAS_ENV_BASE_URL: ${AAS_ENV_BASE_URL:-http://host.docker.internal:8081}
       AAS_ENV_REPO_PATH: ${AAS_ENV_REPO_PATH:-http://host.docker.internal:8081/shells}
