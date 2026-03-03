@@ -89,7 +89,7 @@ async def process_event(eventtype_nodeid: str | None = None, eventtype_displayna
     return
 
 
-def exit_main(args, kwargs):
+def exit_main(args, kwargs):  # pylint: disable=unused-argument
     """Callback for asyncua Client connection loss. """
     sys.exit(1)
 
