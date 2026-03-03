@@ -21,75 +21,85 @@ async def create_aas_for_identification(identifier: str, identification: dict) -
     await register_in_basyx(aas, submodels)
 
 
+def _create_identification_property(id_short: str, value, value_type=model.datatypes.String) -> model.Property:
+    """Helper to create a property with semantic reference."""
+    return model.Property(
+        id_short=id_short,
+        value_type=value_type,
+        value=value,
+        semantic_id=model.ExternalReference(
+            (
+                model.Key(
+                    type_=model.KeyTypes.GLOBAL_REFERENCE, value="http://interop4X.deg/Properties/HasAttribute"
+                ),
+            )
+        ),
+    )
+
+
+def _extract_localized_text(localized_value) -> str:
+    """Extract text from LocalizedText or return as string."""
+    if isinstance(localized_value, dict) and "Text" in localized_value:
+        return str(localized_value["Text"])
+    return str(localized_value) if localized_value is not None else "---"
+
+
 def add_identification_submodel(identification: dict, aas: model.AssetAdministrationShell) -> model.Submodel:
     """Create the machine-identification submodel and link it to the AAS."""
     product_instance_uri = identification["ProductInstanceUri"]
     submodel_id = f"Machinery Identification {product_instance_uri}"
+
+    # Build submodel elements list with mandatory and optional properties
+    elements = [
+        # Mandatory properties
+        _create_identification_property("ProductInstanceUri", product_instance_uri),
+        _create_identification_property("Manufacturer", _extract_localized_text(identification.get("Manufacturer"))),
+        _create_identification_property("SerialNumber", str(identification.get("SerialNumber", "---"))),
+    ]
+
+    # Optional LocalizedText properties
+    if "Model" in identification:
+        elements.append(_create_identification_property("Model", _extract_localized_text(identification["Model"])))
+
+    if "ComponentName" in identification:
+        elements.append(_create_identification_property("ComponentName", _extract_localized_text(identification["ComponentName"])))
+
+    # Optional String properties
+    optional_string_props = [
+        "Location", "DeviceClass", "DeviceManual", "DeviceRevision",
+        "HardwareRevision", "SoftwareRevision", "ManufacturerUri",
+        "ProductCode", "AssetId"
+    ]
+    for prop_name in optional_string_props:
+        if prop_name in identification and identification[prop_name] is not None:
+            elements.append(_create_identification_property(prop_name, str(identification[prop_name])))
+
+    # Optional Integer properties
+    if "YearOfConstruction" in identification and identification["YearOfConstruction"] is not None:
+        elements.append(_create_identification_property(
+            "YearOfConstruction", int(identification["YearOfConstruction"]), model.datatypes.Integer
+        ))
+
+    if "MonthOfConstruction" in identification and identification["MonthOfConstruction"] is not None:
+        elements.append(_create_identification_property(
+            "MonthOfConstruction", int(identification["MonthOfConstruction"]), model.datatypes.Integer
+        ))
+
+    if "RevisionCounter" in identification and identification["RevisionCounter"] is not None:
+        elements.append(_create_identification_property(
+            "RevisionCounter", int(identification["RevisionCounter"]), model.datatypes.Integer
+        ))
+
+    # Optional DateTime property (as String in AAS)
+    if "InitialOperationDate" in identification and identification["InitialOperationDate"] is not None:
+        elements.append(_create_identification_property(
+            "InitialOperationDate", str(identification["InitialOperationDate"])
+        ))
+
     submodel = model.Submodel(
         id_=model.Identifier(submodel_id),
         id_short="MachineryIdentification",
-        submodel_element=[
-            model.Property(
-                id_short="ProductInstanceUri",
-                value_type=model.datatypes.String,
-                value=product_instance_uri,
-                semantic_id=model.ExternalReference(
-                    (
-                        model.Key(
-                            type_=model.KeyTypes.GLOBAL_REFERENCE, value="http://interop4X.deg/Properties/HasAttribute"
-                        ),
-                    )
-                ),
-            ),
-            model.Property(
-                id_short="Manufacturer",
-                value_type=model.datatypes.String,
-                value=identification["Manufacturer"]["Text"],
-                semantic_id=model.ExternalReference(
-                    (
-                        model.Key(
-                            type_=model.KeyTypes.GLOBAL_REFERENCE, value="http://interop4X.deg/Properties/HasAttribute"
-                        ),
-                    )
-                ),
-            ),
-            model.Property(
-                id_short="SerialNumber",
-                value_type=model.datatypes.String,
-                value=identification["SerialNumber"],
-                semantic_id=model.ExternalReference(
-                    (
-                        model.Key(
-                            type_=model.KeyTypes.GLOBAL_REFERENCE, value="http://interop4X.deg/Properties/HasAttribute"
-                        ),
-                    )
-                ),
-            ),
-            model.Property(
-                id_short="Model",
-                value_type=model.datatypes.String,
-                value=identification.get("Model", "---"),
-                semantic_id=model.ExternalReference(
-                    (
-                        model.Key(
-                            type_=model.KeyTypes.GLOBAL_REFERENCE, value="http://interop4X.deg/Properties/HasAttribute"
-                        ),
-                    )
-                ),
-            ),
-            model.Property(
-                id_short="Location",
-                value_type=model.datatypes.String,
-                value=identification.get("Location", "---"),
-                semantic_id=model.ExternalReference(
-                    (
-                        model.Key(
-                            type_=model.KeyTypes.GLOBAL_REFERENCE, value="http://interop4X.deg/Properties/HasAttribute"
-                        ),
-                    )
-                ),
-            ),
-        ],
+        submodel_element=elements,
     )
     aas.submodel.add(model.ModelReference.from_referable(submodel))
     return submodel
