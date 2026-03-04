@@ -43,6 +43,10 @@ EVENT_TYPE_NODEID: str | None = None
 EVENT_TYPE_DISPLAYNAME: str | None = None
 
 
+import logging
+logging.basicConfig(level=logging.DEBUG)
+
+
 class SubscriptionHandler:
     """
     The SubscriptionHandler is used to handle the data that is received for the subscription.
@@ -62,7 +66,7 @@ class SubscriptionHandler:
         We use this to detect if the subscription is still alive, as some OPC UA
         Servers may silently drop subscriptions after some time.
         """
-        print(f"DataChange Notification - Node: {node}, Value: {val}, Data: {data}")
+        # print(f"DataChange Notification - Node: {node}, Value: {val}, Data: {data}")
 
     async def status_change_notification(self, status):
         """
@@ -70,7 +74,7 @@ class SubscriptionHandler:
         This method will be called when the Client received a status change message from the Server.
         We can use this to detect if the subscription is still alive or if there are any issues with the connection.
         """
-        print(f"Subscription Status Change: {status}")
+        # print(f"Subscription Status Change: {status}")
 
 
 async def process_event(eventtype_nodeid: str | None = None, eventtype_displayname: str | None = None):
@@ -175,10 +179,9 @@ async def main():  # pylint: disable=too-many-statements
         else:
             await asyncio.sleep(UA_PUBLISHING_INTERVAL / 1000)  # Sleep for the publishing interval
             try:
-                await client.get_namespace_array()
-                print(f"Polling... Namespace Array")
+                await client.read_values([ua.NodeId(ua.ObjectIds.Server_ServerStatus_CurrentTime)])
             except Exception as ex:
-                print(f"Error while polling OPC UA Server: {ex}")
+                print(f"Error while reading Server CurrentTime to keep connection alive: {ex}")
                 continue
 
 

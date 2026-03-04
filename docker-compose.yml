@@ -6,16 +6,16 @@ services:
       context: .
       dockerfile: Dockerfile
     environment:
-      AAS_ENV_BASE_URL: ${AAS_ENV_BASE_URL:-http://host.docker.internal:8081}
-      AAS_ENV_REPO_PATH: ${AAS_ENV_REPO_PATH:-http://host.docker.internal:8081/shells}
-      SUBMODEL_ENV_REPO_PATH: ${SUBMODEL_ENV_REPO_PATH:-http://host.docker.internal:8081/submodels}
-      CD_ENV_REPO_PATH: ${CD_ENV_REPO_PATH:-http://host.docker.internal:8081/concept-descriptions}
-      AAS_DISCOVERY_PATH: ${AAS_DISCOVERY_PATH:-http://host.docker.internal:8084/lookup/shells}
-      DASHBOARD_SERVICE_PATH: ${DASHBOARD_SERVICE_PATH:-http://host.docker.internal:8085/api/elements}
-      UA_ENDPOINT_URL: ${UA_ENDPOINT_URL:-opc.tcp://opcua.umati.app:4843}
-      UA_REQUEST_TIMEOUT: ${UA_REQUEST_TIMEOUT:-4}
-      UA_MACHINE_INSTANCE_NODEID: ${UA_MACHINE_INSTANCE_NODEID:-nsu=http://MyControledMachine-Namespace/UA;s=MyControledMachine}
-      UA_PUBLISHING_INTERVAL: ${UA_PUBLISHING_INTERVAL:-1000}
+      AAS_ENV_BASE_URL: http://host.docker.internal:8081
+      AAS_ENV_REPO_PATH: http://host.docker.internal:8081/shells
+      SUBMODEL_ENV_REPO_PATH: http://host.docker.internal:8081/submodels
+      CD_ENV_REPO_PATH: http://host.docker.internal:8081/concept-descriptions
+      AAS_DISCOVERY_PATH: http://host.docker.internal:8084/lookup/shells
+      DASHBOARD_SERVICE_PATH: http://host.docker.internal:8085/api/elements
+      UA_ENDPOINT_URL: opc.tcp://opcua.umati.app:4843
+      UA_REQUEST_TIMEOUT: 4
+      UA_MACHINE_INSTANCE_NODEID: nsu=http://MyControledMachine-Namespace/UA;s=MyControledMachine
+      UA_PUBLISHING_INTERVAL: 5000
     extra_hosts:
       - "host.docker.internal:host-gateway"
     restart: unless-stopped
