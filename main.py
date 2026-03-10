@@ -28,8 +28,8 @@ Configuration:
     and can be overridden through environment variables.
 """
 
-import sys
 import asyncio
+import logging
 from asyncua import Client, Node, ua
 from asyncua.common.events import Event
 from common.helper import make_nodeid_string, variant_to_json_serializable
@@ -37,6 +37,8 @@ from ua_job_aas import create_aas_for_job
 from ua_machine_aas import create_aas_for_identification
 
 from config import UA_ENDPOINT_URL, UA_REQUEST_TIMEOUT, UA_MACHINE_INSTANCE_NODEID, UA_PUBLISHING_INTERVAL
+
+logging.basicConfig(level=logging.INFO)
 
 EVENT_QUEUE: asyncio.Queue[Event] = asyncio.Queue(100)
 EVENT_TYPE_NODEID: str | None = None
@@ -93,6 +95,8 @@ async def main():  # pylint: disable=too-many-statements
     """Connect to OPC UA, subscribe to events, and continuously process event queue entries."""
     client = Client(url=UA_ENDPOINT_URL, timeout=UA_REQUEST_TIMEOUT)
     client.application_uri = "urn:ua4machinery2aas-client"
+    client.session_timeout = 60000  # 60 second session timeout
+    client.name = "OPC UA to AAS Bridge Client"
     client.reconnect_enabled = True
     client.reconnect_initial_delay = 1.0
     client.reconnect_max_delay = 30.0
@@ -160,13 +164,6 @@ async def main():  # pylint: disable=too-many-statements
     await subscription.subscribe_events(
         sourcenode=job_order_results_node, evtypes=[found_eventtype_node], where_clause_generation=True
     )
-    await subscription.subscribe_data_change(
-        client.get_node(ua.ObjectIds.Server_ServerStatus_CurrentTime),
-        ua.AttributeIds.Value,
-        1,
-        ua.MonitoringMode.Reporting,
-        5000,  # 5 second sampling interval for the data change subscription, just to keep the subscription alive
-    )
     while True:
         # Polling keeps the loop simple and aligns processing cadence with the
         # configured publishing interval.
@@ -174,12 +171,6 @@ async def main():  # pylint: disable=too-many-statements
             await process_event(event_type_nodeid, event_type_displayname.Text)
         else:
             await asyncio.sleep(UA_PUBLISHING_INTERVAL / 1000)  # Sleep for the publishing interval
-            try:
-                await client.get_namespace_array()
-                print(f"Polling... Namespace Array")
-            except Exception as ex:
-                print(f"Error while polling OPC UA Server: {ex}")
-                continue
 
 
 if __name__ == "__main__":
