@@ -10,11 +10,11 @@ on:
   #schedule:
   #  - cron: '21 18 * * *'
   push:
-    branches: [main]
+    branches: [main, experimental]
     # Publish semver tags as releases.
     tags: ["v*.*.*"]
   pull_request:
-    branches: [main]
+    branches: [main, experimental]
   merge_group:
 
 env:
@@ -35,6 +35,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
+      - name: Determine target image
+        id: image
+        run: |
+          if [ "${GITHUB_REF_NAME}" = "experimental" ]; then
+            echo "name=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-experimental" >> "$GITHUB_OUTPUT"
+          else
+            echo "name=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}" >> "$GITHUB_OUTPUT"
+          fi
+
       # Login against a Docker registry except on PR
       # https://github.com/docker/login-action
       - name: Log into registry ${{ env.REGISTRY }}
@@ -51,7 +60,12 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5.10.0
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ steps.image.outputs.name }}
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha
 
       # Setup QEMU for Cross-Platform builds
       - name: Set up QEMU
