@@ -30,7 +30,7 @@ In `main.py`, the client currently performs the following steps to find and proc
 5. Navigate the address space:
 	- `Machine -> MachineryBuildingBlocks -> JobManager -> JobOrderResults`
 6. Read `GeneratesEvent` references from `JobOrderResults`.
-7. Use the first reference as expected event type (`EVENT_TYPE_NODEID`) and resolve the event type node.
+7. Use the first reference as expected event type (`event_type_nodeid`) and resolve the event type node.
 8. Create a subscription with `UA_PUBLISHING_INTERVAL`.
 9. Subscribe with a server-side filter via `subscribe_events(...)`:
 	- `sourcenode=job_order_results_node`
@@ -38,8 +38,8 @@ In `main.py`, the client currently performs the following steps to find and proc
 	- `where_clause_generation=True`
 10. Process events continuously via queue:
 	- `SubscriptionHandler` puts incoming events into `EVENT_QUEUE`.
-	- `process_event(...)` only processes events whose `EventType` matches the previously determined `EVENT_TYPE_NODEID`.
-	- A `job_data` payload for `create_aas_for_job(...)` is built from the event.
+	- `process_event(...)` only processes events whose `EventType` matches the previously determined event type.
+	- The event field dictionary is forwarded to `create_aas_for_job(...)` (mapping into AAS payloads happens in `ua_job_aas.py`).
 
 Event filtering is already done server-side in the subscription; client-side `EventType` checking remains as an additional safeguard.
 
@@ -61,7 +61,7 @@ Event filtering is already done server-side in the subscription; client-side `Ev
 
 ```bash
 cd backend
-docker-compose up -d
+docker compose up -d
 ```
 
 The following services are available by default:
@@ -83,7 +83,7 @@ The client image is available at:
 Run with the provided compose file:
 
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 or directly:
@@ -107,6 +107,8 @@ docker run --rm \
 ## Configuration (ENV)
 
 All parameters in `config.py` can be overridden via environment variables.
+
+Note: The defaults below are the values from `config.py` (local Python run). In container runs via root `docker-compose.yml`, defaults are set to `http://host.docker.internal:...` so the container can reach services on the host.
 
 ### AAS/BaSyx
 

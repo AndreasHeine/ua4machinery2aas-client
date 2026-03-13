@@ -6,7 +6,7 @@ This is your BaSyx setup. To run the BaSyx containers, you need to have Docker i
 2. Open a terminal and navigate to the extracted folder.
 3. Run the following command to start the BaSyx containers:
 ```
-docker-compose up -d
+docker compose up -d
 ```
 
 ## Access the BaSyx containers
