@@ -166,10 +166,10 @@ async def main():  # pylint: disable=too-many-statements
         ua.AttributeIds.Value,
         1,
         ua.MonitoringMode.Reporting,
-        5000,  # 5 second sampling interval for the data change subscription, just to keep the subscription alive
+        5000,  # 5 second heartbeat-like data change to help detect stalled subscriptions/connections
     )
     while True:
-        # Polling keeps the loop simple and aligns processing cadence with the
+        # Polling keeps the loop simple; when idle, wake-up cadence follows the
         # configured publishing interval.
         if EVENT_QUEUE.qsize() > 0:
             await process_event(event_type_nodeid, event_type_displayname.Text)
