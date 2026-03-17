@@ -1,7 +1,7 @@
 services:
   ua4machinery2aas-client:
     container_name: ua4machinery2aas-client
-    image: ghcr.io/andreasheine/ua4machinery2aas-client-experimental:sha-f5f8d60
+    image: ghcr.io/andreasheine/ua4machinery2aas-client-experimental:sha-46f6f70
     # build:
     #   context: .
     #   dockerfile: Dockerfile
