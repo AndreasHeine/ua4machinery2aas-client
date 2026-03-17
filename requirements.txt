@@ -2,7 +2,7 @@ aiofiles==25.1.0
 aiosqlite==0.22.1
 anyio==4.12.1
 astroid==4.0.4
-asyncua @ git+https://github.com/FreeOpcUa/opcua-asyncio.git@draft--auto-reconnect
+asyncua @ git+https://github.com/FreeOpcUa/opcua-asyncio.git@fix--_create_type_deserializer
 basyx-python-sdk==1.2.1
 black==25.1.0
 certifi==2025.10.5
