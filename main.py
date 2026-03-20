@@ -44,7 +44,7 @@ EVENT_TYPE_DISPLAYNAME: str | None = None
 
 
 import logging
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.WARNING)  # Set to WARNING to reduce asyncua debug logs, adjust as needed
 
 
 class SubscriptionHandler:
@@ -97,18 +97,13 @@ async def main():  # pylint: disable=too-many-statements
     """Connect to OPC UA, subscribe to events, and continuously process event queue entries."""
     client = Client(url=UA_ENDPOINT_URL, timeout=UA_REQUEST_TIMEOUT)
     client.application_uri = "urn:ua4machinery2aas-client"
-    client.reconnect_enabled = True
-    client.reconnect_initial_delay = 1.0
-    client.reconnect_max_delay = 30.0
-    client.reconnect_request_timeout = 20.0
-    client.auto_recreate_invalid_subscriptions = True
     await client.connect()
     print(f"Connected to OPC UA Server at {UA_ENDPOINT_URL}")
 
     # Load custom structure/type metadata so event payload fields can be
     # deserialized into typed Python objects instead of opaque Variants.
     await client.load_data_type_definitions()  # OPC UA v1.04 Structures
-    await client.load_type_definitions()  # OPC UA v1.03 Structures
+    # await client.load_type_definitions()  # OPC UA v1.03 Structures
 
     namespace_array = await client.get_namespace_array()
     print(f"Namespace Array: {namespace_array}")
@@ -178,11 +173,6 @@ async def main():  # pylint: disable=too-many-statements
             await process_event(event_type_nodeid, event_type_displayname.Text)
         else:
             await asyncio.sleep(UA_PUBLISHING_INTERVAL / 1000)  # Sleep for the publishing interval
-            try:
-                await client.read_values([ua.NodeId(ua.ObjectIds.Server_ServerStatus_CurrentTime)])
-            except Exception as ex:
-                print(f"Error while reading Server CurrentTime to keep connection alive: {ex}")
-                continue
 
 
 if __name__ == "__main__":
