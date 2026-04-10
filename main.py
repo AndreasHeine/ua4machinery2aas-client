@@ -139,7 +139,9 @@ async def main():  # pylint: disable=too-many-statements
     print(f"Found OPC for Machinery BuildingBlocks node: {await building_blocks_node.read_display_name()}")
 
     try:
-        job_manager_node: Node = await building_blocks_node.get_child(f"{machine_node.nodeid.NamespaceIndex}:JobManager")
+        job_manager_node: Node = await building_blocks_node.get_child(
+            f"{machine_node.nodeid.NamespaceIndex}:JobManager"
+        )
         print(f"Found OPC for Machinery JobManager node: {await job_manager_node.read_display_name()}")
     except ua.UaError as ex:
         print(f"Error finding JobManager node in Machinery BuildingBlocks: {ex}")
