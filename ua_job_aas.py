@@ -985,6 +985,7 @@ def add_job_order_submodel(job_data: dict, aas: model.AssetAdministrationShell) 
             model.SubmodelElementList(
                 id_short="Description",
                 type_value_list_element=model.SubmodelElementCollection,
+                order_relevant=False,
                 value=[
                     model.SubmodelElementCollection(
                         id_short=None,
@@ -1048,6 +1049,7 @@ def add_job_order_submodel(job_data: dict, aas: model.AssetAdministrationShell) 
             model.SubmodelElementList(
                 id_short="WorkMasterID",
                 type_value_list_element=model.SubmodelElementCollection,
+                order_relevant=False,
                 value=[
                     model.SubmodelElementCollection(
                         id_short=None,
@@ -1149,6 +1151,7 @@ def add_job_order_submodel(job_data: dict, aas: model.AssetAdministrationShell) 
             model.SubmodelElementList(
                 id_short="JobOrderParameters",
                 type_value_list_element=model.SubmodelElementCollection,
+                order_relevant=False,
                 value=[
                     _create_isa95_parameter_collection(entry, None)
                     for entry in job_order_parameters_entries
@@ -1165,6 +1168,7 @@ def add_job_order_submodel(job_data: dict, aas: model.AssetAdministrationShell) 
             model.SubmodelElementList(
                 id_short="PersonnelRequirements",
                 type_value_list_element=model.SubmodelElementCollection,
+                order_relevant=False,
                 value=[
                     _create_isa95_personnel_collection(entry, None)
                     for entry in personnel_requirements_entries
@@ -1181,6 +1185,7 @@ def add_job_order_submodel(job_data: dict, aas: model.AssetAdministrationShell) 
             model.SubmodelElementList(
                 id_short="EquipmentRequirements",
                 type_value_list_element=model.SubmodelElementCollection,
+                order_relevant=False,
                 value=[
                     _create_isa95_equipment_collection(entry, None)
                     for entry in equipment_requirements_entries
@@ -1197,6 +1202,7 @@ def add_job_order_submodel(job_data: dict, aas: model.AssetAdministrationShell) 
             model.SubmodelElementList(
                 id_short="PhysicalAssetRequirements",
                 type_value_list_element=model.SubmodelElementCollection,
+                order_relevant=False,
                 value=[
                     _create_isa95_physical_asset_collection(entry, None)
                     for entry in physical_asset_requirements_entries
@@ -1213,6 +1219,7 @@ def add_job_order_submodel(job_data: dict, aas: model.AssetAdministrationShell) 
             model.SubmodelElementList(
                 id_short="MaterialRequirements",
                 type_value_list_element=model.SubmodelElementCollection,
+                order_relevant=False,
                 value=[
                     _create_isa95_material_collection(entry, None)
                     for entry in material_requirements_entries
@@ -1247,6 +1254,7 @@ def add_job_state_submodel(job_data: dict, aas: model.AssetAdministrationShell) 
             model.SubmodelElementList(
                 id_short="JobStateList",
                 type_value_list_element=model.SubmodelElementCollection,
+                order_relevant=False,
                 value=[
                     model.SubmodelElementCollection(
                         id_short=None,
@@ -1458,6 +1466,7 @@ def add_job_response_submodel(job_data: dict, aas: model.AssetAdministrationShel
             model.SubmodelElementList(
                 id_short="JobStateList",
                 type_value_list_element=model.SubmodelElementCollection,
+                order_relevant=False,
                 value=[
                     model.SubmodelElementCollection(
                         id_short=None,
@@ -1521,6 +1530,7 @@ def add_job_response_submodel(job_data: dict, aas: model.AssetAdministrationShel
             model.SubmodelElementList(
                 id_short="JobResponseData",
                 type_value_list_element=model.SubmodelElementCollection,
+                order_relevant=False,
                 value=[
                     _create_isa95_parameter_collection(entry, None)
                     for entry in job_response_data_entries
@@ -1537,6 +1547,7 @@ def add_job_response_submodel(job_data: dict, aas: model.AssetAdministrationShel
             model.SubmodelElementList(
                 id_short="PersonnelActuals",
                 type_value_list_element=model.SubmodelElementCollection,
+                order_relevant=False,
                 value=[
                     _create_isa95_personnel_collection(entry, None)
                     for entry in personnel_actuals_entries
@@ -1553,6 +1564,7 @@ def add_job_response_submodel(job_data: dict, aas: model.AssetAdministrationShel
             model.SubmodelElementList(
                 id_short="EquipmentActuals",
                 type_value_list_element=model.SubmodelElementCollection,
+                order_relevant=False,
                 value=[
                     _create_isa95_equipment_collection(entry, None)
                     for entry in equipment_actuals_entries
@@ -1569,6 +1581,7 @@ def add_job_response_submodel(job_data: dict, aas: model.AssetAdministrationShel
             model.SubmodelElementList(
                 id_short="PhysicalAssetActuals",
                 type_value_list_element=model.SubmodelElementCollection,
+                order_relevant=False,
                 value=[
                     _create_isa95_physical_asset_collection(entry, None)
                     for entry in physical_asset_actuals_entries
@@ -1585,6 +1598,7 @@ def add_job_response_submodel(job_data: dict, aas: model.AssetAdministrationShel
             model.SubmodelElementList(
                 id_short="MaterialActuals",
                 type_value_list_element=model.SubmodelElementCollection,
+                order_relevant=False,
                 value=[
                     _create_isa95_material_collection(entry, None)
                     for entry in material_actuals_entries
