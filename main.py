@@ -98,8 +98,7 @@ async def main():  # pylint: disable=too-many-statements
     """Connect to OPC UA, subscribe to events, and continuously process event queue entries."""
     client = Client(url=UA_ENDPOINT_URL, timeout=UA_REQUEST_TIMEOUT)
     client.application_uri = "urn:ua4machinery2aas-client"
-    client.connection_lost_callback = exit_main
-    await client.connect()
+    await client.connect(auto_reconnect=True, reconnect_max_delay=5.0)
     print(f"Connected to OPC UA Server at {UA_ENDPOINT_URL}")
 
     # Load custom structure/type metadata so event payload fields can be
