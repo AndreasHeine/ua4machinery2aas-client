@@ -97,12 +97,7 @@ async def main():  # pylint: disable=too-many-statements
     client.application_uri = "urn:ua4machinery2aas-client"
     client.session_timeout = 60000  # 60 second session timeout
     client.name = "OPC UA to AAS Bridge Client"
-    client.reconnect_enabled = True
-    client.reconnect_initial_delay = 1.0
-    client.reconnect_max_delay = 30.0
-    client.reconnect_request_timeout = 20.0
-    client.auto_recreate_invalid_subscriptions = True
-    await client.connect()
+    await client.connect(auto_reconnect=True)
     print(f"Connected to OPC UA Server at {UA_ENDPOINT_URL}")
 
     # Load custom structure/type metadata so event payload fields can be
