@@ -39,7 +39,7 @@ pytest==8.4.2
 pytest-cov==6.0.0
 python-dateutil==2.9.0.post0
 pytz==2025.2
-requests==2.32.5
+requests==2.33.0
 ruff==0.9.10
 six==1.17.0
 sortedcontainers==2.4.0
