@@ -33,7 +33,7 @@ pycparser==3.0
 pyecma376-2==1.0.2
 pyflakes==3.4.0
 Pygments==2.20.0
-pylint==4.0.5
+pylint==4.0.9
 pyOpenSSL==25.3.0
 pytest==8.4.2
 pytest-cov==6.0.0
