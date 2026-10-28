@@ -4,7 +4,7 @@ anyio==4.12.1
 astroid==4.0.4
 asyncua==2.0
 basyx-python-sdk==1.2.1
-black==25.1.0
+black==26.3.1
 certifi==2025.10.5
 cffi==2.0.0
 charset-normalizer==3.4.4
