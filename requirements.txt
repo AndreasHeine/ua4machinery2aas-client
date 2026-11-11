@@ -1,6 +1,6 @@
 aiofiles==25.1.0
 aiosqlite==0.22.1
-anyio==4.12.1
+anyio==4.14.2
 astroid==4.0.4
 asyncua==2.0
 basyx-python-sdk==1.2.1
