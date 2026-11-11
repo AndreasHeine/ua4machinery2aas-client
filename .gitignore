@@ -1,3 +1,15 @@
+# Virtual environments
 env
+.venv/
+venv/
+
+# Python bytecode
 __pycache__/
 *.pyc
+
+# Test and coverage artifacts
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.pytest_cache/

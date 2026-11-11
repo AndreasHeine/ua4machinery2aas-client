@@ -129,9 +129,10 @@ def test_create_aas_for_job_calls_register_with_three_submodels(monkeypatch) -> 
     """Builds and registers exactly JobOrder, JobState and JobResponse submodels."""
     captured = {}
 
-    async def _fake_register(aas, submodels):
+    async def _fake_register(aas, submodels, client=None):
         captured["aas"] = aas
         captured["submodels"] = submodels
+        captured["client"] = client
 
     monkeypatch.setattr(ua_job_aas, "register_in_basyx", _fake_register)
 

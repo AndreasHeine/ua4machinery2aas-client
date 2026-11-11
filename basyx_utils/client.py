@@ -10,20 +10,24 @@ import httpx
 from basyx.aas import model
 
 from common.helper import utf8_base64_url_encode
+from config import AAS_REQUEST_TIMEOUT
 
 
 class AsyncBaSyxClient:
     """
     Async BaSyx client for managing Asset Administration Shells and Submodels.
     Uses httpx for async HTTP requests with proper session management.
+
+    A single instance should be reused for the lifetime of the process; creating
+    a client per request wastes connections.
     """
 
-    def __init__(self, timeout: float = 30.0):
+    def __init__(self, timeout: float = AAS_REQUEST_TIMEOUT):
         """
         Initialize the async BaSyx client.
 
         Args:
-            timeout (float): Request timeout in seconds. Default: 30.0
+            timeout (float): Request timeout in seconds. Default: AAS_REQUEST_TIMEOUT
         """
         self.headers = {"Content-Type": "application/json"}
         self.timeout = timeout
@@ -36,8 +40,7 @@ class AsyncBaSyxClient:
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         """Async context manager exit."""
-        if self._client:
-            await self._client.aclose()
+        await self.close()
 
     @property
     def client(self) -> httpx.AsyncClient:
@@ -48,31 +51,9 @@ class AsyncBaSyxClient:
 
     async def close(self):
         """Close the client session."""
-        if self._client:
+        if self._client is not None:
             await self._client.aclose()
             self._client = None
-
-    def set_headers(self, headers: dict):
-        """
-        Set custom headers for the client.
-
-        Args:
-            headers (dict): A dictionary of headers to set
-        """
-        self.headers = headers
-
-    def update_headers(self, headers: dict):
-        """
-        Update existing headers with new values.
-
-        Args:
-            headers (dict): A dictionary of headers to update
-        """
-        self.headers.update(headers)
-
-    def reset_headers(self):
-        """Reset headers to the default Content-Type."""
-        self.headers = {"Content-Type": "application/json"}
 
     async def post_aas(self, aas_repo_url: str, aas: model.AssetAdministrationShell) -> httpx.Response:
         """
@@ -149,7 +130,8 @@ class AsyncBaSyxClient:
             httpx.Response: The HTTP response from the server
         """
         data = json.dumps(submodel, cls=basyx.aas.adapter.json.AASToJsonEncoder, indent=2)
-        return await self.client.put(submodel_repo_url, content=data, headers=self.headers)
+        url = f"{submodel_repo_url}/{utf8_base64_url_encode(submodel.id)}"
+        return await self.client.put(url, content=data, headers=self.headers)
 
     async def add_submodel_to_basyx(
         self, submodel_repo_url: str, submodel: model.Submodel, overwrite_existing: bool = True
@@ -168,80 +150,5 @@ class AsyncBaSyxClient:
         res = await self.post_submodel(submodel_repo_url, submodel)
         if res.status_code == 409 and overwrite_existing:
             # "/submodels/{submodelIdentifier}" - Updates an existing Submodel
-            url = f"{submodel_repo_url}/{utf8_base64_url_encode(submodel.id)}"
-            return await self.put_submodel(url, submodel)
+            return await self.put_submodel(submodel_repo_url, submodel)
         return res
-
-    async def update_submodelelement_in_basyx(
-        self, submodel_repo_url: str, submodel_id: str, submodel_element: model.SubmodelElement
-    ) -> httpx.Response:
-        """
-        Updates a Submodel Element via PATCH at the BaSyx endpoint.
-
-        Args:
-            submodel_repo_url (str): The URL of the Submodel repository endpoint,
-                e.g. http://localhost:8081/submodels
-            submodel_id (str): The ID of the Submodel containing the element to update,
-                e.g. "Machinery Job Response asdf"
-            submodel_element (basyx.aas.model.SubmodelElement): The Submodel Element to be updated
-
-        Returns:
-            httpx.Response: The HTTP response from the server
-
-        Raises:
-            TypeError: If the SubmodelElement is an abstract type or unknown
-        """
-        if isinstance(submodel_element, model.Property):
-            body = submodel_element.value
-        elif isinstance(submodel_element, model.DataElement):
-            raise TypeError("DataElement is Abstract!")
-        elif isinstance(submodel_element, model.SubmodelElement):
-            raise TypeError("SubmodelElement is Abstract!")
-        else:
-            raise TypeError("Unknown SubmodelElement type!")
-
-        # Example:
-        # "http://localhost:8081/submodels/TWFjaGluZXJ5IEpvYiBSZXNwb25zZSBhc2Rm/submodel-elements/timestamp/$value"
-        url = (
-            f"{submodel_repo_url}/{utf8_base64_url_encode(submodel_id)}"
-            f"/submodel-elements/{submodel_element.id_short}/$value"
-        )
-        data = json.dumps(body, cls=basyx.aas.adapter.json.AASToJsonEncoder, indent=2)
-        return await self.client.patch(url, content=data, headers=self.headers)
-
-    async def update_submodel_property_in_basyx(
-        self, submodel_repo_url: str, submodel_id: str, property_element: model.Property
-    ) -> httpx.Response:
-        """
-        Updates a Property of a Submodel via PATCH at the BaSyx endpoint.
-
-        Args:
-            submodel_repo_url (str): The URL of the Submodel repository endpoint,
-                e.g. http://localhost:8081/submodels
-            submodel_id (str): The ID of the Submodel containing the Property to update,
-                e.g. "Machinery Job Response asdf"
-            property_element (basyx.aas.model.Property): The Property to be updated
-
-        Returns:
-            httpx.Response: The HTTP response from the server
-        """
-        return await self.update_submodelelement_in_basyx(submodel_repo_url, submodel_id, property_element)
-
-    async def add_submodel_reference_to_aas_in_basyx(
-        self, aas_repo_url: str, aas_id: str, submodel: model.Submodel
-    ) -> httpx.Response:
-        """
-        Posts a Submodel Reference to the BaSyx endpoint.
-
-        Args:
-            aas_repo_url (str): The URL of the AAS repository endpoint e.g. http://localhost:8081/shells
-            aas_id (str): The ID of the AAS to which the Submodel Reference will be added e.g. "asdf"
-            submodel (basyx.aas.model.Submodel): The Submodel to create a reference for
-
-        Returns:
-            httpx.Response: The HTTP response from the server
-        """
-        url = f"{aas_repo_url}/{utf8_base64_url_encode(aas_id)}/submodel-refs"
-        submodel_ref = model.ModelReference.from_referable(submodel)
-        data = json.dumps(submodel_ref, cls=basyx.aas.adapter.json.AASToJsonEncoder, indent=2)
-        return await self.client.post(url, content=data, headers=self.headers)

@@ -1,7 +1,7 @@
 """Common helper functions for ID normalization and OPC UA value serialization."""
 
 import base64
-import re
+import datetime
 import uuid
 from typing import Any
 
@@ -18,33 +18,6 @@ NODEID_TYPE_TO_PREFIX: dict[ua.NodeIdType, str] = {
 }
 
 
-def clean_id(value: str) -> str:
-    """
-    Cleans an ID so it can be used as AAS idShort-like value.
-    Result contains only letters, digits and underscores.
-
-    Args:
-        value (str): The ID string to be cleaned
-
-    Returns:
-        str: The cleaned ID containing only [A-Za-z0-9_]
-
-    Raises:
-        ValueError: If the cleaned ID is empty or does not start with a letter.
-    """
-    cleaned_id = re.sub(r"[^A-Za-z0-9_]", "_", str(value).strip())
-    cleaned_id = re.sub(r"_+", "_", cleaned_id).strip("_")
-
-    if not cleaned_id:
-        raise ValueError("Invalid id_short: no valid characters remain after cleaning.")
-
-    if not cleaned_id[0].isalpha():
-        cleaned_id = "ID_" + cleaned_id
-        print(f"Warning: id_short must start with a letter. Prepending 'ID_' to '{value}' -> '{cleaned_id}'")
-
-    return cleaned_id
-
-
 def utf8_base64_url_encode(text: str) -> str:
     """
     Encodes text as UTF-8 and then as URL-safe Base64 string.
@@ -59,6 +32,53 @@ def utf8_base64_url_encode(text: str) -> str:
     base64_bytes = base64.urlsafe_b64encode(utf8_bytes)
     base64_url_encoded = base64_bytes.decode("utf-8")
     return base64_url_encoded.rstrip("=")
+
+
+def ensure_list(value: Any) -> list:
+    """
+    Normalize an OPC UA field value into a list.
+
+    OPC UA structures may carry an array field as a real list, as a single
+    structure (array of length one) or as ``None``. All three are mapped to a
+    list so downstream code only has to handle one shape.
+    """
+    if value is None:
+        return []
+    if isinstance(value, list):
+        return value
+    if isinstance(value, (tuple, set)):
+        return list(value)
+    return [value]
+
+
+def pick_field(data: dict, *field_names: str) -> Any:
+    """
+    Return the value of the first field that is present in ``data``.
+
+    Used for field names that differ between information models (e.g. OPC UA for
+    ISA-95 names the job state array ``State`` while other servers call it
+    ``JobState``).
+    """
+    for field_name in field_names:
+        if data.get(field_name) is not None:
+            return data[field_name]
+    return None
+
+
+def as_int_or_none(value: Any) -> int | None:
+    """Convert numeric-ish values to int, returning None when that is not possible."""
+    if isinstance(value, bool):
+        return int(value)
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float) and value.is_integer():
+        return int(value)
+    if isinstance(value, str):
+        try:
+            return int(value.strip())
+        except ValueError:
+            return None
+    return None
 
 
 def make_expanded_nodeid_from_string(nodeid_string: str, namespace_array: list[str]) -> ua.ExpandedNodeId:
@@ -143,54 +163,70 @@ def make_nodeid_string(enid_string: str, namespace_array: list[str]) -> str:
 
 def variant_to_json_serializable(variant: Any) -> Any:
     """Recursively convert OPC UA variant payloads into JSON-serializable values."""
-    def _serialize(value: Any, seen: set[int]) -> Any:
+    def _serialize(value: Any, active: set[int]) -> Any:
         if value is None:
             return None
         if isinstance(value, (str, int, float, bool)):
             return value
         if isinstance(value, ua.Variant):
-            return _serialize(value.Value, seen)
+            return _serialize(value.Value, active)
         if isinstance(value, uuid.UUID):
             return str(value)
+        if isinstance(value, (datetime.datetime, datetime.date, datetime.time)):
+            # Keep a stable ISO 8601 representation instead of str(), which uses
+            # a space separator and is not valid XSD dateTime.
+            return value.isoformat()
         if isinstance(value, bytes):
             return base64.b64encode(value).decode("ascii")
 
         obj_id = id(value)
 
         if isinstance(value, dict):
-            if obj_id in seen:
+            if obj_id in active:
                 return "<circular-reference>"
-            seen.add(obj_id)
-            return {str(key): _serialize(item, seen) for key, item in value.items()}
+            active.add(obj_id)
+            try:
+                return {str(key): _serialize(item, active) for key, item in value.items()}
+            finally:
+                active.discard(obj_id)
 
         if isinstance(value, (list, tuple, set)):
-            if obj_id in seen:
+            if obj_id in active:
                 return "<circular-reference>"
-            seen.add(obj_id)
-            return [_serialize(item, seen) for item in value]
+            active.add(obj_id)
+            try:
+                return [_serialize(item, active) for item in value]
+            finally:
+                active.discard(obj_id)
 
         if hasattr(value, "__dict__"):
-            if obj_id in seen:
+            if obj_id in active:
                 return "<circular-reference>"
-            seen.add(obj_id)
-            return {
-                key: _serialize(item, seen)
-                for key, item in vars(value).items()
-                if not key.startswith("_") and not callable(item)
-            }
+            active.add(obj_id)
+            try:
+                return {
+                    key: _serialize(item, active)
+                    for key, item in vars(value).items()
+                    if not key.startswith("_") and not callable(item)
+                }
+            finally:
+                active.discard(obj_id)
 
         if hasattr(value, "__slots__"):
-            if obj_id in seen:
+            if obj_id in active:
                 return "<circular-reference>"
-            seen.add(obj_id)
+            active.add(obj_id)
             result: dict[str, Any] = {}
-            for slot in value.__slots__:
-                if slot.startswith("_") or not hasattr(value, slot):
-                    continue
-                item = getattr(value, slot)
-                if callable(item):
-                    continue
-                result[slot] = _serialize(item, seen)
+            try:
+                for slot in value.__slots__:
+                    if slot.startswith("_") or not hasattr(value, slot):
+                        continue
+                    item = getattr(value, slot)
+                    if callable(item):
+                        continue
+                    result[slot] = _serialize(item, active)
+            finally:
+                active.discard(obj_id)
             return result
 
         return str(value)

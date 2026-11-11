@@ -28,7 +28,7 @@ In `main.py`, the client currently performs the following steps to find and proc
 	- `http://opcfoundation.org/UA/Machinery/Jobs/`
 4. Enter via the configured machine instance `UA_MACHINE_INSTANCE_NODEID` (normalized using the helper `make_nodeid_string(...)`).
 5. Navigate the address space:
-	- `Machine -> MachineryBuildingBlocks -> JobManager -> JobOrderResults`
+	- `Machine -> MachineryBuildingBlocks -> JobManagement -> JobOrderResults`
 6. Read `GeneratesEvent` references from `JobOrderResults`.
 7. Use the first reference as expected event type (`event_type_nodeid`) and resolve the event type node.
 8. Create a subscription with `UA_PUBLISHING_INTERVAL`.
@@ -37,9 +37,15 @@ In `main.py`, the client currently performs the following steps to find and proc
 	- `evtypes=[found_eventtype_node]`
 	- `where_clause_generation=True`
 10. Process events continuously via queue:
-	- `SubscriptionHandler` puts incoming events into `EVENT_QUEUE`.
+	- `SubscriptionHandler` puts incoming events into a bounded `asyncio.Queue` (`EVENT_QUEUE_MAXSIZE`); when the queue is
+	full, the oldest event is dropped and the total number of dropped events is reported.
+	- The queue is drained by `_run_event_loop(...)`, which uses `asyncio.wait_for(...)`. A failing event is logged and
+	skipped instead of ending the process.
 	- `process_event(...)` only processes events whose `EventType` matches the previously determined event type.
-	- The event field dictionary is forwarded to `create_aas_for_job(...)` (mapping into AAS payloads happens in `ua_job_aas.py`).
+	- The event field dictionary is forwarded to `create_aas_for_job(...)` (mapping into AAS payloads happens in
+	`ua_job_aas.py`), together with the one shared `AsyncBaSyxClient` instance of the process.
+	- SIGINT/SIGTERM (where the event loop supports signal handlers) stop the loop; afterwards the OPC UA client and
+	the BaSyx client are closed.
 
 Event filtering is already done server-side in the subscription; client-side `EventType` checking remains as an additional safeguard.
 
@@ -48,12 +54,21 @@ Event filtering is already done server-side in the subscription; client-side `Ev
 - OPC UA connectivity via `asyncua`
 - Event subscription
 - AAS and submodel creation/update via BaSyx REST APIs
+- Bounded event queue (back pressure) plus bounded retries with exponential backoff for BaSyx registration
 - Fully configurable via environment variables
 
 ## Requirements
 
-- Python 3.11+ (recommended)
+- Python 3.13 (used by the Docker image, the GitHub workflows and the recommended local virtual environment)
 - Docker + Docker Compose (for local BaSyx backend)
+
+Runtime dependencies are pinned in `requirements.txt`, development and test tooling in `requirements-dev.txt`:
+
+```bash
+python -m venv env
+env\Scripts\activate                      # Windows (Linux/macOS: source env/bin/activate)
+pip install -r requirements-dev.txt       # installs requirements.txt as well
+```
 
 ## Quickstart
 
@@ -91,16 +106,15 @@ or directly:
 ```bash
 docker run --rm \
 	--add-host=host.docker.internal:host-gateway \
-	-e AAS_ENV_BASE_URL=http://host.docker.internal:8081 \
 	-e AAS_ENV_REPO_PATH=http://host.docker.internal:8081/shells \
 	-e SUBMODEL_ENV_REPO_PATH=http://host.docker.internal:8081/submodels \
-	-e CD_ENV_REPO_PATH=http://host.docker.internal:8081/concept-descriptions \
-	-e AAS_DISCOVERY_PATH=http://host.docker.internal:8084/lookup/shells \
-	-e DASHBOARD_SERVICE_PATH=http://host.docker.internal:8085/api/elements \
+	-e AAS_REQUEST_TIMEOUT=10 \
+	-e BASYX_MAX_ATTEMPTS=3 \
 	-e UA_ENDPOINT_URL=opc.tcp://opcua.umati.app:4843 \
 	-e UA_REQUEST_TIMEOUT=4 \
 	-e UA_MACHINE_INSTANCE_NODEID=nsu=http://MyControledMachine-Namespace/UA;s=MyControledMachine \
 	-e UA_PUBLISHING_INTERVAL=1000 \
+	-e EVENT_QUEUE_MAXSIZE=100 \
 	ghcr.io/andreasheine/ua4machinery2aas-client:main
 ```
 
@@ -112,14 +126,16 @@ Note: The defaults below are the values from `config.py` (local Python run). In 
 
 ### AAS/BaSyx
 
-| Variable | Default |
-|---|---|
-| `AAS_ENV_BASE_URL` | `http://localhost:8081` |
-| `AAS_ENV_REPO_PATH` | `http://localhost:8081/shells` |
-| `SUBMODEL_ENV_REPO_PATH` | `http://localhost:8081/submodels` |
-| `CD_ENV_REPO_PATH` | `http://localhost:8081/concept-descriptions` |
-| `AAS_DISCOVERY_PATH` | `http://localhost:8084/lookup/shells` |
-| `DASHBOARD_SERVICE_PATH` | `http://localhost:8085/api/elements` |
+| Variable | Default | Note |
+|---|---|---|
+| `AAS_ENV_REPO_PATH` | `http://localhost:8081/shells` | AAS repository endpoint |
+| `SUBMODEL_ENV_REPO_PATH` | `http://localhost:8081/submodels` | Submodel repository endpoint |
+| `AAS_REQUEST_TIMEOUT` | `10` | Seconds per BaSyx HTTP request |
+| `BASYX_MAX_ATTEMPTS` | `3` | Attempts per AAS/Submodel registration (at least 1) |
+| `BASYX_RETRY_BASE_DELAY` | `1` | Seconds, base of the exponential backoff (5xx and connection errors) |
+
+Registration retries cover transport errors and `5xx` responses. `4xx` responses are reported once including the
+response body, because a validation error does not fix itself on a retry.
 
 ### OPC UA
 
@@ -128,13 +144,26 @@ Note: The defaults below are the values from `config.py` (local Python run). In 
 | `UA_ENDPOINT_URL` | `opc.tcp://opcua.umati.app:4843` | OPC UA server endpoint |
 | `UA_REQUEST_TIMEOUT` | `4` | Seconds (int) |
 | `UA_MACHINE_INSTANCE_NODEID` | `nsu=http://MyControledMachine-Namespace/UA;s=MyControledMachine` | NodeId of the machine instance |
-| `UA_PUBLISHING_INTERVAL` | `1000` | Milliseconds (int) |
+| `UA_PUBLISHING_INTERVAL` | `1000` | Milliseconds (int, at least 10). Also the idle cadence of the event loop |
+| `UA_CONNECT_MAX_ATTEMPTS` | `0` | Initial connect attempts; `0` keeps retrying until the server answers |
+| `UA_CONNECT_RETRY_BASE_DELAY` | `1` | Seconds, base of the connect backoff |
+| `UA_RECONNECT_MAX_DELAY` | `5` | Seconds, upper bound of the connect/reconnect backoff |
+| `EVENT_QUEUE_MAXSIZE` | `100` | Events kept in the queue before the oldest one is dropped |
+
+Numeric variables are validated: an unparsable value is reported and the default is used instead of failing the start.
 
 ## Troubleshooting
 
-- **HTTP 4xx/5xx during AAS/submodel registration:** Check whether `backend/docker-compose.yml` is running and the `*_REPO_PATH` URLs are correct.
+- **HTTP 4xx/5xx during AAS/submodel registration:** Check whether `backend/docker-compose.yml` is running and the
+	`*_REPO_PATH` URLs are correct. For `4xx` responses the response body is printed, which shows what BaSyx rejected.
+- **`registration for id: ... failed after N attempts`:** BaSyx was unreachable or returned `5xx`; the attempts are
+	bounded by `BASYX_MAX_ATTEMPTS` and the event processing continues with the next event.
+- **`Event queue full (... events), dropped the oldest event`:** BaSyx is slower than the incoming OPC UA events.
+	Raise `EVENT_QUEUE_MAXSIZE` or fix the BaSyx connection; the total number of dropped events is printed at shutdown.
 - **No OPC UA events:** Verify `UA_MACHINE_INSTANCE_NODEID` and the namespace/model of the target server.
-- **Timeouts:** Increase `UA_REQUEST_TIMEOUT` and check server connectivity.
+- **`Could not connect to OPC UA server ...`:** The client keeps retrying (unless `UA_CONNECT_MAX_ATTEMPTS` limits it),
+	which is useful when the OPC UA server starts after this container.
+- **Timeouts:** Increase `UA_REQUEST_TIMEOUT`/`AAS_REQUEST_TIMEOUT` and check server connectivity.
 
 ## Local CI check before commit
 
@@ -163,12 +192,12 @@ Found OPC for DI namespace with index: 2
 Found OPC for Machinery namespace with index: 3
 Found OPC for Machinery Jobs namespace with index: 23
 Found machine instance (ns=49;s=MyControledMachine): MyControledMachine
-Read machine identification properties: {'ProductInstanceUri': 'ProductInstanceUri-123', 'Manufacturer': {'Text': 'Andreas Heine', 'Locale': None}, 'SerialNumber': 'SerialNumber-123'}
+Read machine identification properties: {'ProductInstanceUri': 'ProductInstanceUri-123', 'Manufacturer': {'Encoding': 0, 'Text': 'Andreas Heine', 'Locale': None}, 'SerialNumber': 'SerialNumber-123'}
 AAS registration for id: MyControledMachine, status: 204 [Asset Administration Shell Descriptor updated successfully]
 Submodel registration for id: Machinery Identification ProductInstanceUri-123, status: 201 [Submodel created successfully]
-Created/Updated AAS for machine identification nsu=http://MyControledMachine-Namespace/UA;s=MyControledMachine {'ProductInstanceUri': 'ProductInstanceUri-123', 'Manufacturer': {'Text': 'Andreas Heine', 'Locale': None}, 'SerialNumber': 'SerialNumber-123'}
+Created/Updated AAS for machine identification nsu=http://MyControledMachine-Namespace/UA;s=MyControledMachine {'ProductInstanceUri': 'ProductInstanceUri-123', 'Manufacturer': {'Encoding': 0, 'Text': 'Andreas Heine', 'Locale': None}, 'SerialNumber': 'SerialNumber-123'}
 Found OPC for Machinery BuildingBlocks node: LocalizedText(Locale=None, Text='MachineryBuildingBlocks')
-Found OPC for Machinery JobManager node: LocalizedText(Locale=None, Text='JobManager')
+Found OPC for Machinery JobManagement node: LocalizedText(Locale=None, Text='JobManagement')
 Found OPC for Machinery JobOrderResults node: LocalizedText(Locale=None, Text='JobOrderResults')
 Found 1 GeneratesEvent references from Machinery JobOrderResults node
 Using EventType-NodeId's: MyControledMachineJobOrderResultStatusEventType [ns=49;i=1004] for subscription
